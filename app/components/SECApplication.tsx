@@ -8,6 +8,7 @@ import { SECWorkbench, type LivePhoneData } from './SECWorkbench';
 import { PhoneSelect } from './PhoneSelect';
 import type { MonthlyReport } from '../lib/monthlyClosing';
 import { RealAdminWorkbench } from './RealAdminWorkbench';
+import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { PersonalPrivacy } from './SECPrivacyPanels';
 import { SECMFA } from './SECMFA';
 import './secApplication.css';
@@ -16,6 +17,8 @@ export function SECApplication({view='dashboard'}:{view?:'dashboard'|'admin'}){
  const [session,setSession]=useState<Session|null>(null);
  const [profile,setProfile]=useState<SECAccount|null>(null);
  const [accountView,setAccountView]=useState<'none'|'privacy'|'password'|'mfa'>('none');
+ const [adminPasswordOpen,setAdminPasswordOpen]=useState(false);
+ const [authNotice,setAuthNotice]=useState('');
  const[mfaRequired,setMfaRequired]=useState(false);
  const[noticeVersion,setNoticeVersion]=useState('sec-2026-10-14');
  const [ready,setReady]=useState(false);
@@ -36,12 +39,13 @@ export function SECApplication({view='dashboard'}:{view?:'dashboard'|'admin'}){
   return()=>{controller.abort();window.clearInterval(timer);};
  },[session]);
  const logout=useCallback(async()=>{
-  try{if(session)await secPost('/auth/logout',{},session);}catch{/* Clear the local session even when it was already revoked. */}finally{await secAuth().auth.signOut({scope:'local'});setProfile(null);setSession(null);}
+  try{if(session)await secPost('/auth/logout',{},session);}catch{/* Clear the local session even when it was already revoked. */}finally{await secAuth().auth.signOut({scope:'local'});setProfile(null);setSession(null);setAccountView('none');setAdminPasswordOpen(false);}
  },[session]);
  const request=useCallback(<T,>(path:string,body?:unknown,options?:RequestInit)=>options?secRequest<T>(path,options,session):body===undefined?secRequest<T>(path,{},session):secPost<T>(path,body,session),[session]);
  async function acknowledgeNotice(){try{await request('/notice',{version:noticeVersion});setProfile(current=>current?{...current,notice_version:noticeVersion}:null);}catch(e){setError(e instanceof Error?e.message:'Bestätigung fehlgeschlagen.');}}
+ async function adminPasswordSaved(){await logout();setError('');setAuthNotice('Passwort geändert. Melde dich mit deinem neuen Passwort an.');}
  if(!ready)return <div className="sec-access-shell"><p role="status">Verbindung wird hergestellt…</p></div>;
- if(!session)return <AccessForm onSignedIn={next=>setSession(next)} notice={error}/>;
+ if(!session)return <AccessForm onSignedIn={next=>{setAuthNotice('');setSession(next);}} notice={error} successNotice={authNotice}/>;
  if(!profile)return <div className="sec-access-shell"><div className="sec-access-card"><h1>Samsung SEC</h1><p role="status">{error||'Dein Zugang wird geprüft…'}</p>{error&&<button onClick={()=>void logout()}>Zur Anmeldung</button>}</div></div>;
  if(mfaRequired)return <SECMFA required onDone={()=>setMfaRequired(false)} onCancel={()=>void logout()}/>;
  if(profile.must_change_password)return <PasswordForm session={session} profile={profile} onDone={logout}/>;
@@ -50,13 +54,14 @@ export function SECApplication({view='dashboard'}:{view?:'dashboard'|'admin'}){
   {profile.notice_version!==noticeVersion&&<div className="sec-notice-banner"><span>Aktualisierte <a href="/datenschutz">Datenschutzinformation</a> · {noticeVersion}</span><button onClick={()=>void acknowledgeNotice()}>Als gelesen bestätigen</button></div>}
   {error&&<p className="sec-refresh-error" role="status">{error}</p>}
   {accountView!=='none'&&<nav className="sec-account-menu" aria-label="Mein Konto"><button onClick={()=>setAccountView('none')}>Zum Dashboard</button><button onClick={()=>setAccountView('privacy')}>Meine Daten</button><button onClick={()=>setAccountView('password')}>Passwort ändern</button><button onClick={()=>setAccountView('mfa')}>Authenticator</button></nav>}
-  {accountView==='privacy'?<PersonalPrivacy request={request}/>:accountView==='password'?<PasswordForm session={session} profile={profile} onDone={logout}/>:accountView==='mfa'?<SECMFA onDone={()=>setAccountView('none')} onCancel={()=>setAccountView('none')}/>:profile.role!=='sec'?<RealAdminWorkbench key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile}/>:view==='admin'?<div className="sec-access-shell"><p>Für die Verwaltung fehlen dir die Rechte.</p><Link href="/">Zum Dashboard</Link></div>:<PersonalDashboard key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onInvalidSession={logout}/>}
+  {accountView==='privacy'?<PersonalPrivacy request={request}/>:accountView==='password'?<PasswordForm session={session} profile={profile} onDone={logout}/>:accountView==='mfa'?<SECMFA onDone={()=>setAccountView('none')} onCancel={()=>setAccountView('none')}/>:profile.role!=='sec'?<RealAdminWorkbench key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onPasswordChange={()=>setAdminPasswordOpen(true)}/>:view==='admin'?<div className="sec-access-shell"><p>Für die Verwaltung fehlen dir die Rechte.</p><Link href="/">Zum Dashboard</Link></div>:<PersonalDashboard key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onInvalidSession={logout}/>}
+  {profile.role!=='sec'&&adminPasswordOpen&&<AdminPasswordDialog session={session} onClose={()=>setAdminPasswordOpen(false)} onSaved={adminPasswordSaved}/>}
  </div>;
 }
-function AccessForm({onSignedIn,notice}:{onSignedIn:(session:Session)=>void;notice:string}){
+function AccessForm({onSignedIn,notice,successNotice}:{onSignedIn:(session:Session)=>void;notice:string;successNotice:string}){
  const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState(notice);const[busy,setBusy]=useState(false);
  async function submit(event:React.FormEvent){event.preventDefault();setBusy(true);setError('');try{const data=await secPost<{session:Session}>('/auth/login',{email,password});const result=await secAuth().auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});if(result.error)throw result.error;setPassword('');onSignedIn(data.session);}catch(e){setError(e instanceof Error?e.message:'Anmeldung fehlgeschlagen.');}finally{setBusy(false);}}
- return <main className="sec-access-shell"><form className="sec-access-card" onSubmit={submit}><span className="sec-access-brand">SAMSUNG · SEC</span><h1>Dein Dashboard</h1><p>Mit deinem freigeschalteten SEC-Zugang anmelden.</p><label>E-Mail<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="username"/></label><label>Passwort<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required autoComplete="current-password"/></label>{error&&<p className="sec-access-error" role="alert">{error}</p>}<button className="sec-access-primary" disabled={busy}>{busy?'Anmelden…':'Anmelden'}</button><small>Noch kein Zugang? Wende dich an deine zuständige Administration.</small><a href="/datenschutz">Datenschutzinformation</a></form></main>;
+ return <main className="sec-access-shell"><form className="sec-access-card" onSubmit={submit}><span className="sec-access-brand">SAMSUNG · SEC</span><h1>Dein Dashboard</h1><p>Mit deinem freigeschalteten SEC-Zugang anmelden.</p>{successNotice&&<p className="sec-access-success" role="status">{successNotice}</p>}<label>E-Mail<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="username"/></label><label>Passwort<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required autoComplete="current-password"/></label>{error&&<p className="sec-access-error" role="alert">{error}</p>}<button className="sec-access-primary" disabled={busy}>{busy?'Anmelden…':'Anmelden'}</button><small>Noch kein Zugang? Wende dich an deine zuständige Administration.</small><a href="/datenschutz">Datenschutzinformation</a></form></main>;
 }
 function PasswordForm({session,profile,onDone}:{session:Session;profile:SECAccount;onDone:()=>Promise<void>}){
  const[currentPassword,setCurrent]=useState('');const[next,setNext]=useState('');const[confirm,setConfirm]=useState('');const[error,setError]=useState('');const[busy,setBusy]=useState(false);

@@ -51,7 +51,7 @@ const freshId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 const localDate = () => new Date().toISOString().slice(0, 10);
 const parseStored = <T,>(key: string): T[] => { try { const value = JSON.parse(localStorage.getItem(key) ?? '[]'); return Array.isArray(value) ? value : []; } catch { return []; } };
 
-export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
+export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;onPasswordChange?:()=>void}={}) {
   const [tab, setTab] = useState<AdminTab>('overview');
   const [analysisScope, setAnalysisScope] = useState<DashboardScope | undefined>();
   const [group, setGroup] = useState<SECGroup['id']>(remote?.departments[0]??'HE');
@@ -270,7 +270,7 @@ export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
   }[tab];
   return <div className="admin-app">
     <aside className="admin-nav">
-      <a className="admin-brand" href="/admin"><span>SEC</span><div><strong>Verwaltung</strong><small>Samsung Performance</small></div></a>
+      {onPasswordChange?<button type="button" className="admin-brand" onClick={event=>{event.currentTarget.focus({preventScroll:true});onPasswordChange();}} aria-label="Passwort ändern" aria-haspopup="dialog" title="Passwort ändern"><span>SEC</span><span className="admin-brand-copy"><strong>Verwaltung</strong><small>Samsung Performance</small></span></button>:<a className="admin-brand" href="/admin"><span>SEC</span><span className="admin-brand-copy"><strong>Verwaltung</strong><small>Samsung Performance</small></span></a>}
       <nav aria-label="Admin-Bereiche">{([
         ['overview', 'Übersicht', 'Status & Aufgaben', LayoutDashboard],
         ['analysis', 'Auswertung', 'Personen & Märkte', UsersRound],

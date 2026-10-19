@@ -12,6 +12,7 @@
 .sec-access-card small { color:#596b8d; font-size:12px; line-height:1.5; }
 .sec-access-card a { color:#0651bb; font-size:12px; text-decoration:none; }
 .sec-access-card .sec-access-error { color:#a74321; }
+.sec-access-card .sec-access-success { color:#147d57; }
 .sec-account-bar { display:flex; align-items:center; gap:20px; padding:16px 24px; border-bottom:1px solid #e7edf7; background:#fff; color:#07152f; font-size:13px; }
 .sec-account-bar > a:first-child { margin-right:auto; font-size:16px; color:#07152f; text-decoration:none; }
 .sec-account-bar > a { color:#596b8d; text-decoration:none; }

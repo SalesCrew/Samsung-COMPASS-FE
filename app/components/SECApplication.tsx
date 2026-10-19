@@ -65,9 +65,13 @@ function PasswordForm({session,profile,onDone}:{session:Session;profile:SECAccou
 }
 function PersonalDashboard({session,profile,onInvalidSession}:{session:Session;profile:SECAccount;onInvalidSession:()=>void}){
  const[data,setData]=useState<DashboardData|null>(null);const[assignment,setAssignment]=useState('');const[error,setError]=useState('');const[busy,setBusy]=useState(false);
+ const[testMonth,setTestMonth]=useState(()=>profile.is_test?new URLSearchParams(window.location.search).get('testMonth')??'':'');
+ const[testDay,setTestDay]=useState(()=>profile.is_test?new URLSearchParams(window.location.search).get('testDay')??'':'');
  const load=useCallback(async(signal?:AbortSignal)=>{
-  const result=await secRequest<DashboardData>('/dashboard'+(assignment?'?assignment='+encodeURIComponent(assignment):''),{signal},session);setData(result);setError('');
- },[session,assignment]);
+  const params=new URLSearchParams();if(assignment)params.set('assignment',assignment);if(profile.is_test&&testMonth)params.set('testMonth',testMonth);
+  if(profile.is_test&&testDay)params.set('testDay',testDay);
+  const result=await secRequest<DashboardData>('/dashboard'+(params.size?'?'+params.toString():''),{signal},session);setData(result);setError('');
+ },[session,assignment,profile.is_test,testMonth,testDay]);
  useEffect(()=>{
   const controller=new AbortController();let running=false;
   async function refresh(){if(running||document.visibilityState==='hidden')return;running=true;try{await load(controller.signal);}catch(e){if((e as Error).name!=='AbortError'){if(e instanceof SECAPIError&&(e.status===401||e.code==='ACCOUNT_DISABLED')){setData(null);onInvalidSession();}else setError(e instanceof Error?e.message:'Aktualisierung fehlgeschlagen.');}}finally{running=false;}}
@@ -82,7 +86,8 @@ function PersonalDashboard({session,profile,onInvalidSession}:{session:Session;p
  if(!profile.person_id)return <div className="sec-access-shell"><div className="sec-access-card"><h1>Dein Zugang ist bereit</h1><p>Die Administration muss deinen Zugang noch mit deiner SEC-ID und Marktzuordnung verknüpfen.</p></div></div>;
  const groupId=data.assignments.find(a=>a.id===data.selectedAssignment)?.department_id??profile.primary_department;
  if(!groupId)return <div className="sec-access-shell"><p>Noch keine Marktzuordnung vorhanden.</p></div>;
- const live:LivePhoneData={groupId,setting:data.assignments.find(a=>a.id===data.selectedAssignment)?.setting??(groupId==='DA'?data.profile.setting:'full'),reports:data.reports.map(reportFromRow),targetSnapshots:weeklyFromRows(data.weekly),calendarDay:data.calendarDay,readIds:data.read.map(r=>r.report_id),acknowledge,rankings:data.rankings};
- return <main className="sec-personal"><div className="sec-personal-context"><div>{data.assignments.length>1?<PhoneSelect ariaLabel="Mein Markt" value={data.selectedAssignment??''} options={data.assignments.map(a=>({value:a.id,label:a.market}))} onChange={setAssignment}/>:<span>{data.assignments[0]?.market??'Mein Markt'}</span>}{profile.is_test&&<small>Testkonto</small>}</div><button onClick={()=>void refreshNow()} disabled={busy} aria-label="Dashboard aktualisieren"><RefreshCw size={16}/></button></div>{error&&<p className="sec-refresh-error" role="status">{error} <button onClick={()=>void refreshNow()}>Erneut versuchen</button></p>}<SECWorkbench live={live}/></main>;
+ const live:LivePhoneData={groupId,setting:data.assignments.find(a=>a.id===data.selectedAssignment)?.setting??(groupId==='DA'?data.profile.setting:'full'),reports:data.reports.map(reportFromRow),targetSnapshots:weeklyFromRows(data.weekly,profile.is_test&&data.testReplay===true),calendarDay:data.calendarDay,readIds:data.read.map(r=>r.report_id),acknowledge,rankings:data.rankings};
+ const testDays=[...new Set([data.realCalendarDay??data.calendarDay,data.calendarDay,...data.reports.map(r=>{const month=r.month.slice(0,7);return month+'-'+String(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).getUTCDate()).padStart(2,'0');}),...data.weekly.map(r=>(r as typeof r&{as_of:string}).as_of)])].sort().reverse();
+ return <main className="sec-personal"><div className="sec-personal-context"><div>{data.assignments.length>1?<PhoneSelect ariaLabel="Mein Markt" value={data.selectedAssignment??''} options={data.assignments.map(a=>({value:a.id,label:a.market}))} onChange={setAssignment}/>:<span>{data.assignments[0]?.market??'Mein Markt'}</span>}{profile.is_test&&<small>Testkonto</small>}</div><button onClick={()=>void refreshNow()} disabled={busy} aria-label="Dashboard aktualisieren"><RefreshCw size={16}/></button></div>{profile.is_test&&<div className="sec-test-period"><label>Prüfstand<PhoneSelect ariaLabel="Prüfstand" value={testDay||data.calendarDay} options={testDays.map(day=>({value:day,label:new Intl.DateTimeFormat('de-AT',{day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'))}))} onChange={day=>{setTestMonth(day.slice(0,7));setTestDay(day);}}/></label>{data.testReplay&&<small>Historischer Test mit Originaldaten. Upload-Datum und Datenstand bleiben getrennt sichtbar.</small>}</div>}{error&&<p className="sec-refresh-error" role="status">{error} <button onClick={()=>void refreshNow()}>Erneut versuchen</button></p>}<SECWorkbench live={live}/></main>;
 }
 

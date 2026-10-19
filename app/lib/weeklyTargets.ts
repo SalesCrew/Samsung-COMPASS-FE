@@ -9,6 +9,7 @@ export type WeeklyTargetSnapshot = {
   month: string;
   asOf: string;
   updatedAt: string;
+  replayAvailableOn?: string;
   metrics: readonly WeeklyTarget[];
 };
 
@@ -18,7 +19,7 @@ function deliveredTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SEC
   return snapshots.filter(snapshot => snapshot.groupId === group && snapshot.setting === setting
     && snapshot.month === calendarDay.slice(0, 7) && calendarTimeline(snapshot.asOf) && snapshot.asOf.startsWith(snapshot.month + '-')
     && Number.isFinite(Date.parse(snapshot.updatedAt))
-    && snapshot.asOf <= calendarDay && snapshot.updatedAt.slice(0, 10) <= calendarDay);
+    && snapshot.asOf <= calendarDay && (snapshot.replayAvailableOn??snapshot.updatedAt.slice(0, 10)) <= calendarDay);
 }
 
 export function currentTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SECGroup['id'], setting: DASetting, calendarDay: string) {

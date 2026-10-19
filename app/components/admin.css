@@ -209,3 +209,7 @@ body:has(.admin-app)::-webkit-scrollbar-thumb,.admin-app *::-webkit-scrollbar-th
 
 /* Published values share the bar baseline and tick coordinates. */
 .dashboard-chart.real-source .dashboard-chart-grid{display:block}.dashboard-chart.real-source .dashboard-chart-grid span{position:absolute;left:0;right:0;transform:translateY(-50%)}
+.admin-identity-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .8fr); gap: 20px; align-items: center; padding: 16px 0; border-top: 1px solid var(--admin-line, #e3e8ef); }
+.admin-identity-row > div:first-child { display: grid; gap: 4px; min-width: 0; }
+.admin-identity-row small { color: var(--admin-muted, #68768a); overflow-wrap: anywhere; }
+@media (max-width: 680px) { .admin-identity-row { grid-template-columns: 1fr; gap: 10px; } }

@@ -107,3 +107,11 @@ test('older corrections do not rewind the newest dated stand and changes stop at
  const changed={...base,metrics:base.metrics.map(m=>({...m,unit:'€'}))};
  assert.equal(targetProgressHistory([early,changed],'HE','full','2026-10-12','units').at(-1).change,null);
 });
+test('explicit historical test replay keeps upload date visible and limits snapshots to the tested day',()=>{
+ const old=weeklyTargetFixtures('HE').find(s=>s.asOf==='2026-10-08');
+ const delayed={...old,updatedAt:'2026-11-19T10:00:00Z'};
+ assert.equal(currentTargets([delayed],'HE','full','2026-10-12'),null);
+ const replay={...delayed,replayAvailableOn:old.asOf};
+ assert.equal(currentTargets([replay],'HE','full','2026-10-12').updatedAt,delayed.updatedAt);
+ assert.equal(currentTargets([replay],'HE','full','2026-10-07'),null);
+});

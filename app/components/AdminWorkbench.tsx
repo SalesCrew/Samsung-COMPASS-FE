@@ -30,6 +30,7 @@ import { AdminMetricEditor } from './AdminMetricEditor';
 import { AdminHistory } from './AdminHistory';
 import { MEETING_CONFIGS, MEETING_IMPORTS, MEETING_PEOPLE, localRecords, meetingWorkbook, mergeMeetingData } from '../lib/adminDemo';
 import { AdminSelect } from './AdminSelect';
+import { ImportIdentityReview, type ImportIdentityMatch, type ImportPersonOption } from './ImportIdentityReview';
 import { AdminMonthPicker, AdminDatePicker } from './AdminTemporalPicker';
 import type { DashboardScope } from '../lib/adminDashboard';
 import type { LiveDashboardSource } from '../lib/adminLiveData';
@@ -37,7 +38,7 @@ import './admin.css';
 
 type AdminTab = 'overview' | 'analysis' | 'import' | 'configuration' | 'history' | 'accounts' | 'privacy';
 export type AdminRemote={source:LiveDashboardSource;configs:ConfigVersion[];imports:ImportVersion[];departments:SECGroup['id'][];accounts:ReactNode;privacy:ReactNode;refresh:()=>Promise<void>;request:<T>(path:string,body?:unknown,options?:RequestInit)=>Promise<T>};
-type RemoteValidation={issues:{row:number;field:string;message:string}[];count:number;otherMonths:number;specialValues:number;mappings:SourceColumnMapping[]};
+type RemoteValidation={issues:{row:number;column?:string;field?:string;message:string}[];count:number;otherMonths:number;specialValues:number;mappings:SourceColumnMapping[];identityMatches?:ImportIdentityMatch[];people?:ImportPersonOption[]};
 const CONFIG_KEY = 'sec-admin-config-v1';
 const IMPORT_KEY = 'sec-admin-import-v2';
 const INITIAL_DEMO_SOURCE = { sheet: closingTemplate('HE'), mappings: closingMappings(closingTemplate('HE'), 'HE') };
@@ -83,6 +84,7 @@ export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
   const [previewId,setPreviewId]=useState('');
   const [asOf,setAsOf]=useState(localDate());
   const [remoteCheck,setRemoteCheck]=useState<RemoteValidation|null>(null);
+  const [personMatches,setPersonMatches]=useState<Record<string,string>>({});
   const [staged,setStaged]=useState('');
   const [busy,setBusy]=useState(false);
   const fileRead = useRef(0);
@@ -140,7 +142,7 @@ export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
         const nextGroup=result.detectedGroup??remote.departments[0];const chosen=result.sheets.find(v=>v.name===result.preferredSheet)!;
         const month=result.sourceMonths.at(-1)??new Date().toISOString().slice(0,7);const date=result.sourceAsOf??month+'-'+new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate();
         const nextPhase=isPivotSheet(chosen.name)?'MONTH_FINALIZATION':'WEEKLY_PROGRESS';
-        setPreviewId(result.previewId);setSheets(result.sheets);setSheetName(chosen.name);setImportGroup(nextGroup);setImportMonth(month);setAsOf(date);setPhase(nextPhase);setSubtype(nextPhase==='MONTH_FINALIZATION'?'Monthly Closing':'Progress-Tracker');
+        setPreviewId(result.previewId);setPersonMatches({});setSheets(result.sheets);setSheetName(chosen.name);setImportGroup(nextGroup);setImportMonth(month);setAsOf(date);setPhase(nextPhase);setSubtype(nextPhase==='MONTH_FINALIZATION'?'Monthly Closing':'Progress-Tracker');
         const checked=await remote.request<RemoteValidation>('/imports/'+result.previewId+'/validate',{group:nextGroup,setting:importSetting,month,asOf:date,phase:nextPhase,sheet:chosen.name});
         if(request!==fileRead.current)return;setColumnMappings(checked.mappings);setRemoteCheck(checked);setStaged('');return;
       }
@@ -220,9 +222,9 @@ export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
     if (!splitCategories.length) return 'Wähle mindestens eine Kategorie für den Datensatz-Split.';
     return '';
   }
-  const remoteSignature=JSON.stringify([previewId,importGroup,importSetting,importMonth,asOf,phase,sheetName,columnMappings]);
+  const remoteSignature=JSON.stringify([previewId,importGroup,importSetting,importMonth,asOf,phase,sheetName,columnMappings,personMatches]);
   const[checkedSignature,setCheckedSignature]=useState('');
-  function remoteContext(){return{group:importGroup,setting:importSetting,month:importMonth,asOf,phase,sheet:sheetName,mappings:columnMappings};}
+  function remoteContext(){return{group:importGroup,setting:importSetting,month:importMonth,asOf,phase,sheet:sheetName,mappings:columnMappings,personMatches};}
   async function checkRemote(){if(!remote||!previewId)return;setBusy(true);setError('');setStaged('');try{const check=await remote.request<RemoteValidation>('/imports/'+previewId+'/validate',remoteContext());setRemoteCheck(check);setCheckedSignature(remoteSignature);setNotice(`${check.count} passende Datensätze · ${check.otherMonths} andere Monate · ${check.issues.length} Fehler.`);}catch(e){setError(e instanceof Error?e.message:'Prüfung fehlgeschlagen.');}finally{setBusy(false);}}
   async function releaseRemote(){if(!remote||!previewId)return;setBusy(true);setError('');try{const check=await remote.request<RemoteValidation>('/imports/'+previewId+'/validate',remoteContext());setRemoteCheck(check);setCheckedSignature(remoteSignature);if(check.issues.length||!check.count)throw new Error('Datenfehler vor der Veröffentlichung beheben.');const result=await remote.request<{import:{id:string}}>('/imports/'+previewId+'/stage',remoteContext());setStaged(result.import.id);await remote.refresh();setNotice(`${check.count} Datensätze als Entwurf gespeichert. Veröffentlichung separat bestätigen.`);}catch(e){setError(e instanceof Error?e.message:'Import fehlgeschlagen.');}finally{setBusy(false);}}
   async function publishRemote(){if(!remote||!staged||checkedSignature!==remoteSignature)return;setBusy(true);setError('');try{await remote.request('/imports/'+staged+'/publish',{});await remote.refresh();setStaged('');setNotice('Veröffentlicht. Der persönliche Datenstand wird automatisch aktualisiert.');}catch(e){setError(e instanceof Error?e.message:'Veröffentlichung fehlgeschlagen.');}finally{setBusy(false);}}
@@ -357,10 +359,11 @@ export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
                 onSplitCategoriesChange={setSplitCategories}
               />}
             </section>
+            {remote&&remoteCheck?.identityMatches&&<ImportIdentityReview matches={remoteCheck.identityMatches} people={remoteCheck.people??[]} choices={personMatches} onChange={(row,person)=>{setPersonMatches(current=>({...current,[String(row)]:person}));setStaged('');setError('');setNotice('');}}/>}
           </div>
           <aside className="admin-side-stack admin-import-aside">
             <section className="admin-card admin-release-card">
-              <span className="admin-step">04 · PRÜFEN</span><h2>Freigabe-Vorschau</h2>
+              <span className="admin-step">{remote?'05':'04'} · PRÜFEN</span><h2>Freigabe-Vorschau</h2>
               <div className="admin-release-summary">
                 <div><span>Aktiver Stand</span><strong>{sameMonthImports.length ? `v${sameMonthImports.length} · ${sameMonthImports.at(-1)?.phase}` : 'Keiner'}</strong></div>
                 <div><span>Neuer Stand</span><strong>{selectedSheet ? `${importGroup} · ${importMonth}` : 'Datei wählen'}</strong></div>
@@ -373,7 +376,7 @@ export function AdminWorkbench({remote}:{remote?:AdminRemote}={}) {
               {remote&&<button className="admin-subtle wide" disabled={!previewId||busy} onClick={()=>void checkRemote()}>Daten prüfen</button>}
               <button className="admin-primary wide" onClick={()=>remote?void releaseRemote():releaseImport()} disabled={busy||!selectedSheet || readingFile || (!remote&&phase === 'MONTH_FINALIZATION' && subtype === 'Monthly Closing' && Boolean(validateImport()))}><ShieldCheck size={17} /> {remote?busy?'Speichern…':'Als Entwurf speichern':closingMode ? importedClosing ? 'Bereits lokal importiert' : 'Lokal importieren' : 'Vorschau-Stand freigeben'}</button>
               {remote&&staged&&checkedSignature===remoteSignature&&<button className="admin-primary wide" disabled={busy} onClick={()=>void publishRemote()}>Veröffentlichen</button>}
-              {remoteCheck&&remote&&<div className="admin-muted"><p>{remoteCheck.count} passende Datensätze · {remoteCheck.otherMonths} andere Monate · {remoteCheck.specialValues} Sonderwerte</p>{remoteCheck.issues.slice(0,12).map((issue,i)=><p className="admin-error" key={i}>Zeile {issue.row} · {issue.field}: {issue.message}</p>)}</div>}
+              {remoteCheck&&remote&&<div className="admin-muted"><p>{remoteCheck.count} passende Datensätze · {remoteCheck.otherMonths} andere Monate · {remoteCheck.specialValues} Sonderwerte</p>{remoteCheck.issues.slice(0,12).map((issue,i)=><p className="admin-error" key={i}>Zeile {issue.row}{issue.column||issue.field?` · ${issue.column||issue.field}`:''}: {issue.message}</p>)}</div>}
               {closingPreview && <ClosingImportPreview result={importedClosing?.result ?? closingPreview} imported={Boolean(importedClosing)} />}
             </section>
             <section className="admin-card admin-source-summary"><span className="admin-step">QUELLSTRUKTUR</span><h2>{selectedSheet?.name ?? 'Kein Blatt gewählt'}</h2>{selectedSheet ? <><div className="admin-source-metrics"><span><b>{selectedSheet.rows}</b> Zeilen</span><span><b>{selectedSheet.columns.length}</b> Spalten</span><span><b>{selectedSheet.dimension}</b> Bereich</span></div><p className="admin-muted">Es werden nur Blattstruktur und Header gezeigt. Zellwerte und personenbezogene Daten bleiben verborgen.</p></> : <p className="admin-muted">Die Struktur erscheint nach dem lokalen Einlesen.</p>}</section>

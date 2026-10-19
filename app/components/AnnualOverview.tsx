@@ -17,10 +17,10 @@ export function AnnualPointsCard({ points, tier, month, onOpenRules, rulesOpen, 
         <div aria-hidden="true">{annualDots(points).map((dot, index) => <span key={index} className={`constellation-dot${dot.inactive ? ' is-inactive' : ''}${dot.current ? ' is-current' : ''}${dot.previous ? ' is-previous' : ''}${dot.third ? ' is-third' : ''}`} style={{ '--dot-angle': `${dot.angle}deg`, '--dot-size': `${dot.size}px` } as CSSProperties} />)}</div>
         <div className="constellation-copy">
           <div className="points-total"><strong>{points}</strong><span>/ {ANNUAL_MAXIMUM}</span></div>
-          <p>{incomplete?'Bekannte Punkte':'Jahrespunkte'}</p><em>{TIER_LABELS[tier]} · {month}</em><small>{currentLevel ? `SEC-Level · ${currentLevel}` : incomplete?'Jahresstand unvollständig':`${Math.max(0, ANNUAL_MAXIMUM - points)} fehlen`}</small>
+          <p>Jahrespunkte</p><em>{TIER_LABELS[tier]} · {month}</em>{currentLevel&&<small>{`SEC-Level · ${currentLevel}`}</small>}
         </div>
       </div>
-      <div className="level-rail" aria-label={incomplete?'SEC-Level-Grenzen; Jahresstand unvollständig':`SEC-Level-Fortschritt: ${points} Punkte; SEC bis 20, SEC+ ab 21, SEC Pro ab 32`}>
+      <div className="level-rail" aria-label={incomplete?'SEC-Level-Grenzen':`SEC-Level-Fortschritt: ${points} Punkte; SEC bis 20, SEC+ ab 21, SEC Pro ab 32`}>
         <div className="level-line" /><span className={`level-node level-start${!incomplete && onThreshold && points <= 20 ? ' is-achieved' : ''}`} /><span className={`level-node level-plus${!incomplete && points === 21 ? ' is-achieved' : ''}`} /><span className={`level-node level-pro${!incomplete && points >= 32 ? ' is-achieved' : ''}`} />
         {!incomplete && !onThreshold && <span className="level-node level-current" style={{ left: `${position}%` }} />}
         <div className="level-label level-label-start">SEC 20</div><div className="level-label level-label-plus">SEC+ 21</div>

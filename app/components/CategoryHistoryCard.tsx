@@ -6,15 +6,16 @@ import { categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth } from '
 
 export type CategoryEntry = { id: string; short: string; category: string; label?: string };
 
-export function CategoryHistoryCard({ groupId, entries, flow = false, anchor = true }: {
-  groupId: string; entries: readonly CategoryEntry[]; flow?: boolean; anchor?: boolean;
+export function CategoryHistoryCard({ groupId, entries, flow = false, anchor = true, native = false }: {
+  groupId: string; entries: readonly CategoryEntry[]; flow?: boolean; anchor?: boolean; native?: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const lastShown = useRef<string | null>(null);
   const followLatest = useRef(true);
   const [viewportWidth, setViewportWidth] = useState(473);
   const [edges, setEdges] = useState({ older: false, newer: false });
-  const trackWidth = categoryTrackWidth(entries.length, viewportWidth);
+  const scale=native ? 0.5 : 1;
+  const trackWidth = categoryTrackWidth(entries.length, viewportWidth/scale);
   const latestId = entries.at(-1)?.id ?? '';
   const hasEntries = entries.length > 0;
   const updateEdges = useCallback(() => {
@@ -57,9 +58,9 @@ export function CategoryHistoryCard({ groupId, entries, flow = false, anchor = t
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); move(event.key === 'ArrowLeft' ? -1 : 1); }
       if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); event.currentTarget.scrollLeft = event.key === 'Home' ? 0 : event.currentTarget.scrollWidth; }
     }}>
-      <div className="category-history-track" style={{width: trackWidth}} role="list" aria-label="Monatliche SEC-Level">
+      <div className="category-history-track" style={{width: trackWidth*scale}} role="list" aria-label="Monatliche SEC-Level">
         <svg className="category-route" viewBox={`0 0 ${trackWidth} 190`} preserveAspectRatio="none" aria-hidden="true">{categoryRoadmapPaths(entries, trackWidth).map((path, index) => <path key={entries[index].id} d={path}/>)}</svg>
-        {entries.map((entry, index) => <div key={entry.id} className={`category-node${index === entries.length - 1 ? ' is-latest' : ''}`} style={categoryNodePosition(index, entries.length, entry.category, trackWidth)} role="listitem" aria-label={`${entry.label ?? entry.short}: ${entry.category === '—' ? 'Level noch nicht verfügbar' : entry.category}`}><small>{entry.short}</small><strong>{entry.category}</strong></div>)}
+        {entries.map((entry, index) => <div key={entry.id} className={`category-node${index === entries.length - 1 ? ' is-latest' : ''}`} style={(()=>{const position=categoryNodePosition(index,entries.length,entry.category,trackWidth);return{left:position.left*scale,top:position.top*scale};})()} role="listitem" aria-label={`${entry.label ?? entry.short}: ${entry.category === '—' ? 'Level noch nicht verfügbar' : entry.category}`}><small>{entry.short}</small><strong>{entry.category}</strong></div>)}
       </div>
     </div> : <p className="category-empty">Kein Kategoriestand im Zeitraum</p>}
   </section>;

@@ -49,7 +49,7 @@ test('theme and shared interactive metrics use natural flow',async()=>{
  assert.match(workbench,/sec-dashboard-theme\/v1/);assert.match(workbench,/soft-continuous-corners-v3/);
  for(const [key,value] of [['canvas','#F5F9FF'],['blue','#0651BB'],['green','#04B87A']])assert.ok(workbench.includes(key+': "'+value+'"'));
  for(const corner of ['card: 42','nested: 36','dock: 64'])assert.ok(workbench.includes(corner));
- assert.match(styles,/\.header-actions \{[\s\S]*?position: sticky;[\s\S]*?top: 88px/);
+ assert.match(styles,/\.header-actions \{[\s\S]*?position: sticky;[\s\S]*?top: calc\(88px \* var\(--sec-ui-scale, 1\)\)/);
  assert.doesNotMatch(styles,/height: (?:3392|4520)px/);
  assert.match(metrics,/closing-metric-back/);assert.match(styles,/superellipse\(1\.5\)/);
 });

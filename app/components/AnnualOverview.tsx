@@ -24,7 +24,7 @@ export function AnnualPointsCard({ points, tier, month, onOpenRules, rulesOpen, 
         <div className="level-line" /><span className={`level-node level-start${!incomplete && onThreshold && points <= 20 ? ' is-achieved' : ''}`} /><span className={`level-node level-plus${!incomplete && points === 21 ? ' is-achieved' : ''}`} /><span className={`level-node level-pro${!incomplete && points >= 32 ? ' is-achieved' : ''}`} />
         {!incomplete && !onThreshold && <span className="level-node level-current" style={{ left: `${position}%` }} />}
         <div className="level-label level-label-start">SEC 20</div><div className="level-label level-label-plus">SEC+ 21</div>
-        {!incomplete && !onThreshold && <div className="level-label level-label-current" style={{ left: `${position}%`, top: position <49 || position >88 ? 50 : undefined }}>{points}</div>}
+        {!incomplete && !onThreshold && <div className="level-label level-label-current" style={{ left: `${position}%`, top: position <49 || position >88 ? 'calc(50px * var(--sec-ui-scale, 1))' : undefined }}>{points}</div>}
         <div className="level-label level-label-pro">SEC Pro 32</div>
       </div>
     </> : <div className="dashboard-empty"><strong>Jahresstand</strong><p>Für diesen Datenstand noch nicht verfügbar.</p></div>}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-/** Keep dialogs inside the scaled phone without moving them into a portal. */
+/** Preview sheets stay in their device; live sheets lock the page behind them. */
 export function usePhoneDialog(onClose: () => void) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -10,6 +10,11 @@ export function usePhoneDialog(onClose: () => void) {
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
+    const native=!!panel?.closest('.fieldforce-dashboard');
+    const previousOverflow=document.body.style.overflow;
+    const outside=native?Array.from(document.querySelectorAll<HTMLElement>('.is-fieldforce > .sec-account-bar, .is-fieldforce > .sec-notice-banner, .sec-personal-context, .sec-test-period')):[];
+    const previousInert=outside.map(element=>element.inert);
+    if(native){document.body.style.overflow='hidden';outside.forEach(element=>{element.inert=true;});}
     panel?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
@@ -27,7 +32,7 @@ export function usePhoneDialog(onClose: () => void) {
       }
     };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); previous?.focus({ preventScroll: true }); };
+    return () => { document.removeEventListener('keydown', onKey); if(native){document.body.style.overflow=previousOverflow;outside.forEach((element,index)=>{element.inert=previousInert[index];});} previous?.focus({ preventScroll: true }); };
   }, []);
   return panelRef;
 }

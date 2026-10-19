@@ -1,5 +1,6 @@
 'use client';
 import { createClient, type Session } from '@supabase/supabase-js';
+import { sessionFetch, SessionUnavailable } from './sessionTransport';
 import type { DASetting, SECGroup } from './groups';
 import type { MonthlyReport } from './monthlyClosing';
 import type { WeeklyTargetSnapshot } from './weeklyTargets';
@@ -19,9 +20,20 @@ export function secAuth(){
  return browserAuth;
 }
 export async function secRequest<T>(path:string,options:RequestInit={},session?:Session|null):Promise<T>{
- const token=session?.access_token;
- const response=await fetch((process.env.NEXT_PUBLIC_SEC_API_URL??'http://127.0.0.1:4320')+'/api'+path,{...options,cache:'no-store',headers:{...options.headers,...(token?{Authorization:'Bearer '+token}:{})}});
+ const url=(process.env.NEXT_PUBLIC_SEC_API_URL??'http://127.0.0.1:4320')+'/api'+path;
+ let response:Response;
+ try{
+  response=session?await sessionFetch(url,options,session.user.id,{
+   current:async()=>{const {data,error}=await secAuth().auth.getSession();if(error)throw error;return data.session;},
+   refresh:refreshAccessSession,
+  }):await fetch(url,{...options,cache:'no-store'});
+ }catch(error){if(error instanceof SessionUnavailable)throw new SECAPIError(error.message,401,'AUTH_REQUIRED');throw error;}
  const body=await response.json();if(!response.ok)throw new SECAPIError(body.error??'Anfrage fehlgeschlagen.',response.status,body.code??'REQUEST_FAILED');return body as T;
+}
+let refreshing:Promise<Session|null>|null=null;
+function refreshAccessSession(){
+ if(!refreshing)refreshing=secAuth().auth.refreshSession().then(({data,error})=>{if(error)throw new SessionUnavailable();return data.session;}).finally(()=>{refreshing=null;});
+ return refreshing;
 }
 export function secPost<T>(path:string,body:unknown,session?:Session|null){return secRequest<T>(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},session);}
 export function reportFromRow(row:PublishedRow):MonthlyReport{

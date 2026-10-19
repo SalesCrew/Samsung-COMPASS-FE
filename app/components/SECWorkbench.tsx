@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
@@ -349,12 +349,12 @@ function withOpacity(hex: string, opacity: number) {
 }
 
 
-export type LivePhoneData = { groupId: SECGroup['id']; setting: DASetting; reports: readonly MonthlyReport[]; targetSnapshots: readonly WeeklyTargetSnapshot[]; calendarDay: string; readIds: readonly string[]; acknowledge: (reports: readonly MonthlyReport[]) => void; rankings?: Record<string,{ pool: number; rank: number | null; outsideTopTen: boolean }> };
-function SECPhone({ group, panel, scenario, setting, onOpenPanel, onClosePanel, live }: {
+export type LivePhoneData = { market?: string; groupId: SECGroup['id']; setting: DASetting; reports: readonly MonthlyReport[]; targetSnapshots: readonly WeeklyTargetSnapshot[]; calendarDay: string; readIds: readonly string[]; acknowledge: (reports: readonly MonthlyReport[]) => void; rankings?: Record<string,{ pool: number; rank: number | null; outsideTopTen: boolean }> };
+function SECPhone({ group, panel, scenario, setting, onOpenPanel, onClosePanel, live, context }: {
  group: SECGroup; panel: PhonePanel | null; scenario: PreviewScenario; setting: DASetting;
- onOpenPanel:(panel:PhonePanel)=>void; onClosePanel:()=>void; live?: LivePhoneData;
+ onOpenPanel:(panel:PhonePanel)=>void; onClosePanel:()=>void; live?: LivePhoneData; context?: ReactNode;
 }) {
- const {scrollRegionRef,activeSection,scrollToSection,cancelNavigation}=useDashboardNavigation(group.id);
+ const {scrollRegionRef,activeSection,scrollToSection,cancelNavigation}=useDashboardNavigation(group.id, !!live);
  const [filterDraft,setFilterDraft]=useState<FilterValues>(()=>({...groupDefaultFilters(group.id),comparison:'month',status:'final'}));
  const [selectedMonth,setSelectedMonth]=useState<string|null>(null);
  const reports=useMemo(()=>live?.reports??closingFixtures(group.id,setting,scenario),[group.id,setting,scenario,live?.reports]);
@@ -380,13 +380,21 @@ function SECPhone({ group, panel, scenario, setting, onOpenPanel, onClosePanel, 
  function openFilters(){cancelNavigation();onOpenPanel('filters');}
  function viewDetails(){if(!report)return;scrollToSection('monthly',()=>{if(document.visibilityState==='visible')acknowledge([report]);});}
  function viewLatest(){setSelectedMonth(null);scrollToSection('home');}
- return <div className="phone-canvas" data-testid="sec-phone" data-group={group.id} data-template={group.template} data-scenario={scenario}>
+ const quickActions=(<div className="header-actions" aria-label="Schnellaktionen"><button className={filterCount?'has-filters':undefined} aria-label={'Filter'+(filterCount?', '+filterCount+' aktiv':'')} aria-haspopup="dialog" aria-expanded={panel==='filters'} onClick={openFilters}><Filter size={31} strokeWidth={1.7}/>{filterCount>0&&<span className="active-filter-count">{filterCount}</span>}</button><button aria-label="Daten-Updates anzeigen" aria-haspopup="dialog" aria-expanded={panel==='updates'} onClick={()=>{cancelNavigation();onOpenPanel('updates');}}><Bell size={31} strokeWidth={1.65}/>{unread.size>0&&<span className="update-notification-dot"/>}</button></div>);
+ const targetsJump=(<button type="button" className="header-targets-jump" aria-controls={group.id+'-section-targets'} aria-current={activeSection==='targets'?'location':undefined} aria-label={'Monatliche Ziele '+monthName(calendarDay.slice(0,7))+' anzeigen'} onClick={()=>scrollToSection('targets',undefined,{instant:true,focus:true})}><span>Monatliche Ziele</span><span>{monthName(calendarDay.slice(0,7),true)}<ChevronDown size={24} strokeWidth={1.8}/></span></button>);
+ return <div className="phone-canvas" data-testid={live ? "sec-dashboard" : "sec-phone"} data-group={group.id} data-template={group.template} data-scenario={scenario}>
   <div className="phone-dashboard" inert={panel!==null}>
-   <div className="status-bar" aria-label="Status bar"><span className="status-time">08:12</span><div className="status-icons" aria-hidden="true"><span className="cell-bars"><i/><i/><i/><i/></span><Wifi className="status-wifi" size={28} strokeWidth={3.2}/><span className="battery-mark"><i/></span></div></div>
-   <div className="phone-scroll-region" ref={scrollRegionRef} tabIndex={0} role="region" aria-label={group.id+' Dashboard, vertikal scrollbar'}>
+   {!live && <div className="status-bar" aria-label="Status bar"><span className="status-time">08:12</span><div className="status-icons" aria-hidden="true"><span className="cell-bars"><i/><i/><i/><i/></span><Wifi className="status-wifi" size={28} strokeWidth={3.2}/><span className="battery-mark"><i/></span></div></div>}
+   <div className="phone-scroll-region" ref={scrollRegionRef} tabIndex={live ? undefined : 0} role="region" aria-label={group.id+' Dashboard'}>
     <div className="phone-scroll-content monthly-layout"><span className="scroll-anchor home-anchor" id={group.id+'-section-home'}/>
-     <header className="phone-header"><h1>{title}</h1><button className="phone-month-control" onClick={openFilters} aria-label={'Berichtsmonat '+(report?monthName(report.month):'auswählen')+' ändern'}>{group.id} <span>·</span> {report?monthName(report.month):'Noch kein Bericht'} <span>⌄</span></button><button type="button" className="header-targets-jump" aria-controls={group.id+'-section-targets'} aria-current={activeSection==='targets'?'location':undefined} aria-label={'Monatliche Ziele '+monthName(calendarDay.slice(0,7))+' anzeigen'} onClick={()=>scrollToSection('targets',undefined,{instant:true,focus:true})}><span>Monatliche Ziele</span><span>{monthName(calendarDay.slice(0,7),true)}<ChevronDown size={24} strokeWidth={1.8}/></span></button></header>
-     <div className="header-actions" aria-label="Schnellaktionen"><button className={filterCount?'has-filters':undefined} aria-label={'Filter'+(filterCount?', '+filterCount+' aktiv':'')} aria-haspopup="dialog" aria-expanded={panel==='filters'} onClick={openFilters}><Filter size={31} strokeWidth={1.7}/>{filterCount>0&&<span className="active-filter-count">{filterCount}</span>}</button><button aria-label="Daten-Updates anzeigen" aria-haspopup="dialog" aria-expanded={panel==='updates'} onClick={()=>{cancelNavigation();onOpenPanel('updates');}}><Bell size={31} strokeWidth={1.65}/>{unread.size>0&&<span className="update-notification-dot"/>}</button></div>
+     {live?<header className="fieldforce-heading">
+      <p className="fieldforce-market"><span>{group.id}</span><span aria-hidden="true">·</span><span>{live.market??group.description}</span></p>
+      <h1>Dein Überblick</h1>
+      <div className="fieldforce-heading-row"><button type="button" className="phone-month-control" onClick={openFilters} aria-label={'Berichtsmonat '+(report?monthName(report.month):'auswählen')+' ändern'}><span>Monatsabschluss</span><strong>{report?monthName(report.month):'Noch kein Bericht'}<ChevronDown size={16} strokeWidth={1.7}/></strong></button>{quickActions}</div>
+      {context}
+      {targetsJump}
+     </header>:<>     <header className="phone-header"><h1>{title}</h1><button className="phone-month-control" onClick={openFilters} aria-label={'Berichtsmonat '+(report?monthName(report.month):'auswählen')+' ändern'}>{group.id} <span>·</span> {report?monthName(report.month):'Noch kein Bericht'} <span>⌄</span></button>{targetsJump}</header>{quickActions}</>}
+
      {scenario==='lag'&&<p className="monthly-lag-note">September noch nicht veröffentlicht.</p>}
      {scenario==='offline'&&<div className="monthly-lag-note" role="status">Aktualisierung nicht möglich. Dein letzter Abschluss bleibt verfügbar. <button onClick={()=>onOpenPanel('updates')}>Gespeicherten Stand ansehen</button></div>}
      <MonthlyDashboard group={group} report={report} reports={reports} filters={filters} calendarDay={calendarDay} targetSnapshots={targetSnapshots} unread={!!report&&unread.has(report.publicationId)} latestUnread={latestUnread} onDetails={viewDetails} onLatest={viewLatest} onOpenRules={()=>{cancelNavigation();onOpenPanel('rules');}} rulesOpen={panel==='rules'} onTargetsView={()=>scrollToSection('targets',undefined,{instant:true})} realData={!!live} ranking={report?live?.rankings?.[report.month]:undefined}/>
@@ -552,7 +560,8 @@ function RangeControl({
   );
 }
 
-export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
+export function SECWorkbench({ live, context }: { live?: LivePhoneData; context?: ReactNode } = {}) {
+  const isLive=!!live;
   const [theme, setTheme] = useState<ThemeConfig>(ACCEPTED_THEME);
   const [hasLoadedTheme, setHasLoadedTheme] = useState(false);
   const [jsonDraft, setJsonDraft] = useState("");
@@ -563,6 +572,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
   const [daSetting, setDaSetting] = useState<DASetting>("full");
 
   useEffect(() => {
+    if(isLive)return;
     const frame = window.requestAnimationFrame(() => {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -582,14 +592,15 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
       setHasLoadedTheme(true);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [isLive]);
 
   useEffect(() => {
-    if (!hasLoadedTheme) return;
+    if (isLive || !hasLoadedTheme) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ theme, shapeRevision: SHAPE_REVISION }));
-  }, [hasLoadedTheme, theme]);
+  }, [hasLoadedTheme, theme, isLive]);
 
   useEffect(() => {
+    if(isLive)return;
     const resize = () => {
       const byHeight = (window.innerHeight - 112) / 1844;
       const previewWidth = window.innerWidth <= 980 ? window.innerWidth - 44 : window.innerWidth - 520;
@@ -599,7 +610,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, []);
+  }, [isLive]);
 
   const exportPayload = useMemo(
     () => ({
@@ -627,11 +638,11 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
     "--sec-border": withOpacity(theme.colors.border, theme.opacities.border),
     "--sec-shadow": withOpacity(theme.colors.shadow, theme.opacities.shadow),
     "--shadow-opacity": theme.effects.shadowOpacity,
-    "--shadow-blur": `${theme.effects.shadowBlur}px`,
+    "--shadow-blur": `${isLive ? 14 : theme.effects.shadowBlur}px`,
     "--border-opacity": theme.effects.borderOpacity,
-    "--card-radius": `${theme.radii.card}px`,
-    "--nested-radius": `${theme.radii.nested}px`,
-    "--dock-radius": `${theme.radii.dock}px`,
+    "--card-radius": `${isLive ? 20 : theme.radii.card}px`,
+    "--nested-radius": `${isLive ? 16 : theme.radii.nested}px`,
+    "--dock-radius": `${isLive ? 24 : theme.radii.dock}px`,
     "--phone-scale": phoneScale,
   } as CSSProperties;
 
@@ -743,7 +754,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
 
   if (live) {
     const group=SEC_GROUPS.find(g=>g.id===live.groupId)!;
-    return <div className="workbench live-workbench" style={cssVariables}><div className="device-area"><div className="iphone-shell" style={{width:853*phoneScale+20,height:1844*phoneScale+20}}><i className="side-button side-button-top"/><i className="side-button side-button-mid"/><i className="side-button side-button-lower"/><div className="phone-viewport" style={{width:853*phoneScale,height:1844*phoneScale}}><div className="phone-scale-layer" style={{transform:`scale(${phoneScale})`}}><SECPhone group={group} live={live} scenario="standard" setting={live.setting} panel={activePanel?.panel??null} onOpenPanel={panel=>setActivePanel({groupId:group.id,panel})} onClosePanel={()=>setActivePanel(null)}/></div></div></div></div></div>;
+    return <div className="fieldforce-dashboard" style={cssVariables}><SECPhone context={context} key={group.id+'-'+live.setting} group={group} live={live} scenario="standard" setting={live.setting} panel={activePanel?.groupId===group.id?activePanel.panel:null} onOpenPanel={panel=>setActivePanel({groupId:group.id,panel})} onClosePanel={()=>setActivePanel(null)}/></div>;
   }
   return (
     <div className="workbench" style={cssVariables}>
@@ -869,7 +880,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
             min={8}
             max={68}
             step={1}
-            displayValue={`${theme.effects.shadowBlur}px`}
+            displayValue={`${isLive ? 14 : theme.effects.shadowBlur}px`}
             onChange={(value) => updateEffect("shadowBlur", value)}
             onReset={() => resetEffect("shadowBlur")}
           />
@@ -891,7 +902,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
             min={16}
             max={48}
             step={1}
-            displayValue={`${theme.radii.card}px`}
+            displayValue={`${isLive ? 20 : theme.radii.card}px`}
             onChange={(value) => updateRadius("card", value)}
             onReset={() => resetRadius("card")}
           />
@@ -902,7 +913,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
             min={14}
             max={44}
             step={1}
-            displayValue={`${theme.radii.nested}px`}
+            displayValue={`${isLive ? 16 : theme.radii.nested}px`}
             onChange={(value) => updateRadius("nested", value)}
             onReset={() => resetRadius("nested")}
           />
@@ -913,7 +924,7 @@ export function SECWorkbench({ live }: { live?: LivePhoneData } = {}) {
             min={28}
             max={64}
             step={1}
-            displayValue={`${theme.radii.dock}px`}
+            displayValue={`${isLive ? 24 : theme.radii.dock}px`}
             onChange={(value) => updateRadius("dock", value)}
             onReset={() => resetRadius("dock")}
           />

@@ -1,0 +1,154 @@
+/* Live Fieldforce uses CSS-sized components and the document's own scroll.
+   The 853px artboard and device chrome are exclusive to /preview. */
+.is-fieldforce { min-height: 100dvh; background: #f5f9ff; }
+.is-fieldforce > .sec-account-bar {
+  position: sticky; top: 0; z-index: 80; flex-wrap: nowrap;
+  min-height: 56px; gap: 12px; padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+}
+.is-fieldforce > .sec-account-bar > span,
+.is-fieldforce > .sec-account-bar > a:not(:first-child) { display: none; }
+.is-fieldforce > .sec-account-bar > a:first-child { font-size: 15px; white-space: nowrap; }
+.is-fieldforce > .sec-account-bar button { min-height: 44px; padding: 0 4px; font-size: 12px; }
+.is-fieldforce .sec-personal { min-height: calc(100dvh - 56px); max-width: 600px; margin: auto; padding: 0; background: transparent; }
+.is-fieldforce .sec-notice-banner { padding: 12px 20px; font-size: 12px; line-height: 1.5; }
+.is-fieldforce .sec-notice-banner button { min-height: 44px; }
+.is-fieldforce .sec-account-menu { justify-content: flex-start; max-width: 600px; margin: auto; gap: 8px; }
+.is-fieldforce .sec-account-menu button { min-height: 44px; font-size: 13px; }
+.is-fieldforce .sec-account-settings { width: calc(100% - 32px); margin: 16px auto; }
+.is-fieldforce .sec-access-shell { min-height: calc(100dvh - 112px); }
+.fieldforce-dashboard {
+  --sec-ui-scale: .5;
+  --sec-min-font: 12px;
+  width: 100%; min-width: 0;
+}
+.fieldforce-dashboard .phone-canvas,
+.fieldforce-dashboard .phone-dashboard,
+.fieldforce-dashboard .phone-scroll-region,
+.fieldforce-dashboard .phone-scroll-content {
+  position: relative; inset: auto; width: 100%; height: auto;
+  min-height: 0; overflow: visible; clip-path: none;
+}
+.fieldforce-dashboard .fieldforce-heading { position: relative; margin: 0 20px; padding-top: 20px; }
+.fieldforce-dashboard .fieldforce-market { display: flex; align-items: baseline; gap: 7px; padding-right: 36px; margin: 0; color: var(--sec-copy-muted); font-size: 12px; line-height: 1.5; }
+.fieldforce-dashboard .fieldforce-market > span:first-child { color: var(--sec-blue); font-weight: 600; }
+.fieldforce-dashboard .fieldforce-market > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fieldforce-dashboard .fieldforce-heading h1 { margin: 6px 0 14px; color: var(--sec-text); font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: -.04em; }
+.fieldforce-dashboard .fieldforce-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fieldforce-dashboard .phone-month-control { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 44px; margin: 0; font-size: 14px; line-height: 1.4; text-align: left; }
+.fieldforce-dashboard .phone-month-control > span { color: var(--sec-copy-muted); font-size: 11px; }
+.fieldforce-dashboard .phone-month-control strong { display: flex; align-items: center; gap: 6px; color: var(--sec-blue); font-weight: 500; }
+.fieldforce-dashboard .phone-month-control strong svg { width: 16px; height: 16px; }
+.fieldforce-dashboard .header-targets-jump { min-height: 48px; margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid #dfe7f3; gap: 12px; font-size: 13px; font-weight: 500; }
+.fieldforce-dashboard .header-targets-jump > span:last-child { color: var(--sec-copy-muted); font-size: 12px; font-weight: 400; }
+.fieldforce-dashboard .header-actions { position: static; inset: auto; margin: 0; width: auto; height: 44px; gap: 8px; flex-shrink: 0; }
+.fieldforce-dashboard .header-actions button { width: 44px; height: 44px; box-shadow: none; }
+.fieldforce-dashboard .lucide { width: 20px; height: 20px; flex-shrink: 0; }
+.fieldforce-dashboard .active-filter-count { min-width: 16px; height: 16px; font-size: 10px; }
+.fieldforce-dashboard .monthly-dashboard { margin: 12px 16px 0; gap: 16px; padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px)); }
+.fieldforce-dashboard .configured-card { padding: 18px; }
+.fieldforce-dashboard .monthly-section-heading { padding-inline: 4px; }
+.fieldforce-dashboard .monthly-section-heading h2 { font-size: 23px; }
+.fieldforce-dashboard .configured-month-section, .fieldforce-dashboard .monthly-annual-section { gap: 14px; min-width: 0; }
+.fieldforce-dashboard .monthly-report-summary .summary-pane { min-width: 0; }
+.fieldforce-dashboard .summary-pane strong { font-size: clamp(30px, 8vw, 40px); }
+.fieldforce-dashboard .monthly-premium-amount > strong,
+.fieldforce-dashboard .annual-premium-amount > strong { font-size: clamp(24px, 7vw, 38px); }
+.fieldforce-dashboard .closing-metric-grid > *, .fieldforce-dashboard .closing-metric-tile { min-width: 0; }
+.fieldforce-dashboard .closing-metric-name { overflow-wrap: anywhere; }
+.fieldforce-dashboard .closing-metric-back { min-height: 44px; }
+.fieldforce-dashboard .current-targets { scroll-margin-top: 76px; }
+.fieldforce-dashboard .current-targets-heading { flex-wrap: wrap; gap: 6px 12px; }
+.fieldforce-dashboard .current-targets-heading h2 { font-size: 18px; }
+.fieldforce-dashboard .current-targets-cadence { margin-left: auto; }
+.fieldforce-dashboard .current-target-row { min-height: 64px; }
+.fieldforce-dashboard .current-target-row > svg { width: 16px; height: 16px; }
+.fieldforce-dashboard .weekly-target-history { font-size: 12px; }
+.fieldforce-dashboard .weekly-target-history th, .fieldforce-dashboard .weekly-target-history td { padding-inline: 3px; }
+.fieldforce-dashboard .weekly-target-summary { flex-wrap: wrap; gap: 12px; }
+.fieldforce-dashboard .category-card.overview-flow-card { height: auto; }
+.fieldforce-dashboard .category-history-heading { height: auto; min-height: 44px; padding: 8px 14px 0; }
+.fieldforce-dashboard .category-history-heading button { width: 44px; height: 44px; padding: 0; }
+.fieldforce-dashboard .category-history-heading h3 { font-size: 13px; }
+.fieldforce-dashboard .category-node small { font-size: 9px; }
+.fieldforce-dashboard .category-node strong { font-size: 10px; }
+.fieldforce-dashboard .points-rules-trigger { min-width: 44px; min-height: 44px; }
+.fieldforce-dashboard .points-card.is-full-width .constellation { left: 50%; transform: translateX(-50%); }
+.fieldforce-dashboard .performance-chart-info { width: 44px; height: 44px; top: 4px; right: 6px; }
+.fieldforce-dashboard .performance-chart-header { padding-right: 30px; }
+.fieldforce-dashboard .performance-chart-switch { bottom: 10px; right: 10px; }
+.fieldforce-dashboard .performance-chart-switch button { min-height: 44px; padding: 6px 9px; font-size: 12px; }
+.fieldforce-dashboard .performance-chart-footer { padding-bottom: 48px; gap: 16px; font-size: 12px; }
+.fieldforce-dashboard .performance-bar strong { font-size: 10px; }
+.fieldforce-dashboard .performance-bar-group { font-size: 11px; }
+.fieldforce-dashboard .bottom-dock {
+  position: fixed; top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: 50%; transform: translateX(-50%); width: min(calc(100% - 48px), 380px);
+  height: 64px; padding: 6px 10px; z-index: 90;
+  box-shadow: 0 4px 24px #23395614;
+}
+.fieldforce-dashboard .bottom-dock button { height: 48px; border-radius: 17px; }
+.fieldforce-dashboard .bottom-dock svg { width: 23px; height: 23px; }
+.fieldforce-dashboard button:focus-visible, .fieldforce-dashboard [tabindex="0"]:focus-visible { outline: 2px solid var(--sec-blue); outline-offset: 3px; }
+.fieldforce-dashboard button[role=combobox]:focus { outline: none; box-shadow: none; }
+.fieldforce-dashboard .dashboard-filter-overlay {
+  position: fixed; inset: 0; z-index: 200; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  align-items: flex-end; justify-content: center;
+}
+.fieldforce-dashboard .dashboard-filter-panel { width: 100%; max-width: 560px; max-height: min(90dvh, 820px); border-radius: 20px; }
+.fieldforce-dashboard .dashboard-filter-header { padding: 16px 20px; gap: 12px; }
+.fieldforce-dashboard .dashboard-filter-header h2 { font-size: 24px; }
+.fieldforce-dashboard .filter-close { width: 44px; height: 44px; }
+.fieldforce-dashboard .dashboard-filter-body { padding: 18px 20px; }
+.fieldforce-dashboard .filter-intro, .fieldforce-dashboard .filter-help, .fieldforce-dashboard .filter-scope-note { font-size: 13px; }
+.fieldforce-dashboard .filter-group legend { font-size: 16px; }
+.fieldforce-dashboard .phone-select-trigger { min-height: 48px; font-size: 16px; padding: 12px; border-radius: 10px; }
+.fieldforce-dashboard .phone-select-options [role=option] { min-height: 44px; font-size: 15px; padding: 10px; }
+.fieldforce-dashboard .phone-select-options { max-height: 240px; }
+.fieldforce-dashboard .filter-chip span { min-height: 44px; font-size: 12px; }
+.fieldforce-dashboard .dashboard-filter-footer { padding: 14px 20px; }
+.fieldforce-dashboard .dashboard-filter-footer button, .fieldforce-dashboard .publication-view { min-height: 44px; font-size: 15px; }
+@media (min-width: 680px) {
+  .is-fieldforce > .sec-account-bar { padding-inline: 28px; }
+  .is-fieldforce > .sec-account-bar > span, .is-fieldforce > .sec-account-bar > a:not(:first-child) { display: block; }
+  .is-fieldforce .sec-personal { padding-top: 12px; }
+  .fieldforce-dashboard .dashboard-filter-overlay { align-items: center; }
+}
+@media (max-width: 359px) {
+  .fieldforce-dashboard .monthly-dashboard { margin-inline: 12px; }
+  .fieldforce-dashboard .configured-card { padding: 14px; }
+  .fieldforce-dashboard .fieldforce-heading { margin-inline: 16px; }
+  .fieldforce-dashboard .filter-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fieldforce-dashboard .weekly-target-facts { gap: 12px; }
+}
+
+/* A quiet account menu replaces the desktop links in the mobile app bar. */
+.is-fieldforce .fieldforce-account { position: relative; }
+.is-fieldforce .fieldforce-account-trigger { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; color: #304464; }
+.is-fieldforce .fieldforce-account-trigger:hover, .is-fieldforce .fieldforce-account-trigger[aria-expanded=true] { background: #eff4fb; }
+.is-fieldforce .fieldforce-account-popover { position: absolute; right: 0; top: calc(100% + 8px); z-index: 110; width: min(248px, calc(100vw - 32px)); padding: 8px; border: 1px solid #e3eaf4; border-radius: 14px; background: #fff; box-shadow: 0 12px 36px #162d4d14; }
+.is-fieldforce .fieldforce-account-popover p { margin: 6px 10px 8px; padding-bottom: 12px; border-bottom: 1px solid #edf1f7; color: #68788e; font-size: 12px; overflow-wrap: anywhere; }
+.is-fieldforce .fieldforce-account-popover [role=menuitem] { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 10px; border: 0; border-radius: 8px; background: transparent; color: #1e3455; font-size: 13px; text-decoration: none; text-align: left; }
+.is-fieldforce .fieldforce-account-popover [role=menuitem]:hover, .is-fieldforce .fieldforce-account-popover [role=menuitem]:focus-visible { background: #f0f5fc; outline: none; }
+.fieldforce-context-tools { color: var(--sec-copy-muted); }
+.fieldforce-context-row { display: flex; align-items: start; gap: 10px; }
+.fieldforce-dashboard .fieldforce-refresh { position: absolute; top: 8px; right: -10px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--sec-copy-muted); cursor: pointer; }
+.fieldforce-dashboard .fieldforce-refresh span { display: none; }
+.fieldforce-dashboard .fieldforce-refresh svg { width: 16px; height: 16px; }
+.fieldforce-dashboard .fieldforce-refresh:hover { color: var(--sec-blue); background: #eaf1fc; }
+.fieldforce-dashboard .fieldforce-refresh:disabled { opacity: .5; cursor: wait; }
+.is-fieldforce .sec-test-period { flex: 1; max-width: none; margin: 10px 0 0; padding: 0; }
+.is-fieldforce .sec-test-period summary { display: flex; align-items: center; gap: 8px; min-height: 36px; width: fit-content; padding: 4px 0; color: #718099; font-size: 11px; cursor: pointer; list-style: none; }
+.is-fieldforce .sec-test-period summary::-webkit-details-marker { display: none; }
+.is-fieldforce .sec-test-period summary > span:first-child { color: #566984; font-weight: 500; }
+.is-fieldforce .sec-test-period summary time { font-variant-numeric: tabular-nums; }
+.is-fieldforce .sec-test-period[open] .fieldforce-test-chevron { transform: rotate(180deg); }
+.is-fieldforce .sec-test-period summary:focus-visible { outline: none; color: var(--sec-blue); text-decoration: underline; text-underline-offset: 4px; }
+.is-fieldforce .fieldforce-test-body { padding: 10px 0 12px; }
+.is-fieldforce .fieldforce-test-body label { display: grid; gap: 8px; font-size: 12px; }
+.is-fieldforce .fieldforce-test-body small { display: block; margin-top: 8px; font-size: 11px; line-height: 1.5; color: #68788e; }
+.fieldforce-market-select { display: grid; gap: 8px; margin: 14px 0; font-size: 12px; }
+.fieldforce-dashboard .constellation-copy small { max-width: 132px; font-size: 10px; line-height: 1.4; text-align: center; white-space: normal; }
+.fieldforce-dashboard .constellation-copy em { font-size: 11px; }
+.fieldforce-dashboard .constellation-copy p { font-size: 11px; }
+html:has(.is-fieldforce) { scrollbar-width: none; }
+html:has(.is-fieldforce)::-webkit-scrollbar { display: none; }

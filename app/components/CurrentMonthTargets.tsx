@@ -27,7 +27,7 @@ export function CurrentMonthTargets({ groupId, setting, calendarDay, snapshots, 
   const currentStand = history.find(stand => stand.asOf === snapshot?.asOf);
   const detailAchievement = detail ? targetAchievement(detail.actual, detail.target) : null;
   function open(key: string) {
-    overviewPosition.current = surface.current?.closest('.phone-scroll-region')?.scrollTop ?? 0;
+    overviewPosition.current = realData ? window.scrollY : surface.current?.closest('.phone-scroll-region')?.scrollTop ?? 0;
     setSelection({ context, key });
     requestAnimationFrame(() => { onView(); back.current?.focus({ preventScroll: true }); });
   }
@@ -36,7 +36,7 @@ export function CurrentMonthTargets({ groupId, setting, calendarDay, snapshots, 
     setSelection(null);
     requestAnimationFrame(() => {
       const region = surface.current?.closest('.phone-scroll-region');
-      if (region) region.scrollTop = overviewPosition.current;
+      if(realData)window.scrollTo({top:overviewPosition.current,behavior:'instant'});else if(region)region.scrollTop=overviewPosition.current;
       Array.from(overview.current?.querySelectorAll<HTMLButtonElement>('button') ?? []).find(button => button.dataset.goal === key)?.focus({ preventScroll: true });
     });
   }

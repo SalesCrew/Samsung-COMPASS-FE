@@ -17,7 +17,7 @@ export function MonthlyDashboard({ group, report, reports, filters, calendarDay,
   const isST = group.id === 'ST';
   const countdown = <KPIReleaseCountdown calendarDay={calendarDay} />;
   const targets = <CurrentMonthTargets groupId={group.id} setting={filters.daSetting} calendarDay={calendarDay} snapshots={targetSnapshots} onView={onTargetsView} realData={realData} />;
-  if (!report) return <main className="monthly-dashboard">{countdown}<section className="configured-card monthly-empty"><h2>Noch kein Monatsabschluss verfügbar</h2><p>Dein Monatsbericht erscheint nach der Veröffentlichung.</p></section><MonthlyPremiumCard report={null} groupId={group.id} /><section id={group.id+'-section-category'} className="monthly-empty-section"><h2>{isST ? 'Jahresübersicht' : 'Jahresfortschritt'}</h2><p>Noch kein Jahresstand verfügbar.</p></section><section id={group.id+'-section-monthly'} />{targets}<PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" /></main>;
+  if (!report) return <div className="monthly-dashboard">{countdown}<section className="configured-card monthly-empty"><h2>Noch kein Monatsabschluss verfügbar</h2><p>Dein Monatsbericht erscheint nach der Veröffentlichung.</p></section><MonthlyPremiumCard report={null} groupId={group.id} /><section id={group.id+'-section-category'} className="monthly-empty-section"><h2>{isST ? 'Jahresübersicht' : 'Jahresfortschritt'}</h2><p>Noch kein Jahresstand verfügbar.</p></section><section id={group.id+'-section-monthly'} />{targets}<PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" /></div>;
   const annual = annualClosing(reports,report);
   const defaults = groupMetricBlocks(group.id, report.setting);
   const blocks = realData ? group.id==='LH'
@@ -28,7 +28,7 @@ export function MonthlyDashboard({ group, report, reports, filters, calendarDay,
   const pool = realData ? ranking?.pool??0 : group.id === 'LH' ? 4 : group.id === 'DA' ? 31 : group.id === 'IM' ? 28 : 24;
   const showRank = !isST && pool >= 10;
   const categories = activeReports(reports).filter(r => r.month <= report.month).map(r => ({ id: r.month, label: monthName(r.month), short: monthName(r.month,true)+(r.month.startsWith(annual.year) ? '' : ' '+r.month.slice(2,4)), category: annualClosing(reports,r).level ?? '—' }));
-  return <main className="monthly-dashboard">
+  return <div className="monthly-dashboard">
     {countdown}
     <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} />
     <MonthlyPremiumCard report={report} groupId={group.id} />
@@ -36,7 +36,7 @@ export function MonthlyDashboard({ group, report, reports, filters, calendarDay,
       <header className="monthly-section-heading"><h2 id={group.id+'-annual-title'}>{isST ? 'Jahresübersicht' : 'Jahresfortschritt'}</h2><p>{annual.year} · Stand nach {monthName(report.month).split(' ')[0]}{annual.partial ? ' · unvollständig' : ''}</p></header>
       {isST ? <div className="configured-card st-year-coverage"><strong>{annual.reports.length}</strong><div><h3>veröffentlichte Monatsbewertungen</h3><p>{annual.year} · keine bestätigte Jahrespunkte-Regel</p></div></div> : <>
         <div className={'configured-overview'+(!showRank ? ' without-leaderboard' : '')}><AnnualPointsCard incomplete={realData&&annual.partial} points={annual.points} tier={report.tier} month={monthName(report.month)} currentLevel={annual.level} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow fullWidth={!showRank} />{showRank && <LeaderboardCard pool={pool} rank={rank} outsideTopTen={realData ? ranking?.outsideTopTen??false : group.id === 'DA'} flow />}</div>
-        <AnnualPremiumCard annual={annual} /><CategoryHistoryCard groupId={group.id} entries={categories} flow anchor={false} />
+        <AnnualPremiumCard annual={annual} /><CategoryHistoryCard native={realData} groupId={group.id} entries={categories} flow anchor={false} />
       </>}
       {isST && <PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" />}
     </section>
@@ -52,5 +52,5 @@ export function MonthlyDashboard({ group, report, reports, filters, calendarDay,
     {targets}
     {!isST && <PerformanceChart group={group} filters={filters} reports={reports} onOpenRules={onOpenRules} rulesOpen={rulesOpen} className="configured-card configured-history" />}
     <p className="configured-data-note">{realData?'Veröffentlichte Monatsabschlüsse und kumulierte Wochenstände.':'Synthetische Monatsabschlüsse und Zielstände · keine echten Personen- oder Auszahlungsdaten.'}</p>
-  </main>;
+  </div>;
 }

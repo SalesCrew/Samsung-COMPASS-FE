@@ -82,3 +82,31 @@ test('unknown extra payouts remain unknown while known annual extras and real ze
  assert.equal(annualClosing([selected],selected).extras,null);
  const zero={...selected,extras:[{type:'On-top',amount:0}],extrasAvailable:true};assert.equal(annualClosing([zero],zero).extras,0);
 });
+
+test('imported empty level fields use complete historical year points for each month',()=>{
+ const points=[2,2,3,3,3,3,3,3,3];
+ const reports=closingFixtures('IM').filter(r=>r.month.startsWith('2026')).map((r,i)=>({...r,points:points[i],sourceLevel:null}));
+ const history=reports.map(r=>annualClosing(reports,r).level);
+ assert.deepEqual(history,['SEC','SEC','SEC','SEC','SEC','SEC','SEC','SEC+','SEC+']);
+ assert.equal(annualClosing(reports,reports.at(-1)).points,25);
+ for(const sourceLevel of [undefined,null,'','   '])assert.equal(annualClosing(reports,{...reports.at(-1),sourceLevel}).level,'SEC+');
+ const zero=reports.map(r=>({...r,points:0}));assert.equal(annualClosing(zero,zero.at(-1)).level,'SEC');
+ const incompleteMoney=reports.map(r=>({...r,premium:null,extrasAvailable:false}));assert.equal(annualClosing(incompleteMoney,incompleteMoney.at(-1)).level,'SEC+');
+});
+
+test('level fallback preserves unknown point periods, source overrides and yearly resets',()=>{
+ const reports=closingFixtures('IM').filter(r=>r.month.startsWith('2026')).map(r=>({...r,points:3,sourceLevel:null}));
+ const september=reports.at(-1);
+ assert.equal(annualClosing(reports.filter(r=>r.month!=='2026-02'),september).level,null);
+ for(const invalid of [null,undefined,NaN,Infinity,-1,4]){
+  const missing=reports.map((r,i)=>i===0?{...r,points:invalid}:r);
+  assert.equal(annualClosing(missing,september).level,null);
+ }
+ assert.equal(annualClosing(reports,{...september,sourceLevel:' SEC Pro '}).level,'SEC Pro');
+ assert.equal(annualClosing(reports,{...september,sourceLevel:'SEC +'}).level,'SEC+');
+ assert.equal(annualClosing(reports,{...september,sourceLevel:'unknown source value'}).level,null);
+ const old={...september,month:'2025-12'};assert.equal(annualClosing([...reports,old],old).level,null);
+ const january={...september,month:'2027-01',points:2};assert.equal(annualClosing([...reports,january],january).level,'SEC');
+ const corrected={...reports[0],revision:2,points:0};assert.equal(annualClosing([...reports,corrected],september).points,24);
+ const st=closingFixtures('ST').at(-1);assert.equal(annualClosing([st],{...st,sourceLevel:'SEC'}).level,null);
+});

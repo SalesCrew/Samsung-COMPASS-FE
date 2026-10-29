@@ -113,10 +113,15 @@ export function annualClosing(reports: readonly MonthlyReport[], selected: Month
   const knownPoints = eligible.filter(r => r.points !== null);
   const knownExtras=eligible.filter(r=>r.extrasAvailable!==false);
   const points = selected.groupId === 'ST' || !knownPoints.length ? null : knownPoints.reduce((sum, r) => sum + r.points!, 0);
+  const sourceLevel = selected.sourceLevel?.replace(/\s/g,'').toUpperCase();
+  const suppliedLevel = sourceLevel==='SEC'?'SEC':sourceLevel==='SEC+'?'SEC+':sourceLevel==='SECPRO'?'SEC Pro':null;
+  // Missing source levels can use the documented annual thresholds only with a complete point history.
+  const completePoints = missing.length===0 && eligible.every(r=>typeof r.points==='number'&&Number.isFinite(r.points)&&r.points>=0&&r.points<=3);
+  const level = selected.groupId==='ST'?null:sourceLevel?suppliedLevel:completePoints&&points!==null?annualCategory(points):null;
   return { year, throughMonth: selected.month, reports: eligible, missing,
     partial: missing.length > 0 || knownExtras.length < eligible.length || knownMoney.length < eligible.length && selected.groupId !== 'ST' || knownPoints.length < eligible.length && selected.groupId !== 'ST',
     premium: knownMoney.length ? knownMoney.reduce((sum,r) => sum + r.premium!,0) : null,
-    points, level: selected.sourceLevel!==undefined?(selected.sourceLevel?.replace(/\s/g,'').toUpperCase()==='SEC'?'SEC':selected.sourceLevel?.replace(/\s/g,'').toUpperCase()==='SEC+'?'SEC+':selected.sourceLevel?.replace(/\s/g,'').toUpperCase()==='SECPRO'?'SEC Pro':null):points === null ? null : annualCategory(points),
+    points, level,
     extras: knownExtras.length?knownExtras.flatMap(r => r.extras).reduce((sum,e) => sum+e.amount,0):null, extrasPartial:knownExtras.length<eligible.length,
     publicationSetId: eligible.map(r => r.publicationId).join('|'),
   };

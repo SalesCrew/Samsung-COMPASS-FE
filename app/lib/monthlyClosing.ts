@@ -13,6 +13,7 @@ export type MonthlyReport = {
   premium: number | null; extras: { type: string; amount: number }[];
   metrics: ClosingMetric[]; qualitative: ClosingMetric[]; changed: string[];
 };
+export type PointHistoryEntry = { month: string; points: number | null; sourceLevel?: string | null };
 export type PreviewScenario = 'standard' | 'new-month' | 'release-window' | 'correction' | 'old-correction' | 'missing' | 'zero' | 'partial' | 'percent-only' | 'empty' | 'lag' | 'offline';
 export const PREVIEW_SCENARIOS: { value: PreviewScenario; label: string }[] = [
   { value: 'standard', label: 'Neuer September-Abschluss' }, { value: 'new-month', label: 'Oktober kommt hinzu' },
@@ -52,7 +53,7 @@ function weighted(metrics: readonly ClosingMetric[]) {
 /** Synthetic, internally consistent published closings. Never a real payout calculator. */
 export function closingFixtures(group: GroupId, setting: DASetting = 'full', scenario: PreviewScenario = 'standard'): MonthlyReport[] {
   if (scenario === 'empty') return [];
-  const months = ['2025-12', ...Array.from({ length: scenario === 'new-month' ? 10 : scenario === 'lag' ? 8 : 9 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`)];
+  const months = ['2025-10', '2025-11', '2025-12', ...Array.from({ length: scenario === 'new-month' ? 10 : scenario === 'lag' ? 8 : 9 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`)];
   let reports = months.map(month => {
     const index = Number(month.slice(5)) - 1;
     const metrics = groupMetricBlocks(group, setting).flatMap(block => block.metrics.map(m => fixtureMetric(m, group, index)));
@@ -104,24 +105,29 @@ export function activeReports(reports: readonly MonthlyReport[]) {
   return [...months.values()].sort((a, b) => a.month.localeCompare(b.month));
 }
 export function latestReport(reports: readonly MonthlyReport[]) { return activeReports(reports).at(-1) ?? null; }
+export function rollingClosing(history: readonly PointHistoryEntry[], selected: Pick<MonthlyReport,'month'|'groupId'>) {
+  const months=[selected.month];
+  while(months.length<12)months.unshift(previousMonth(months[0]));
+  const byMonth=new Map(history.map(row=>[row.month,row]));
+  const valid=(row:PointHistoryEntry|undefined)=>typeof row?.points==='number'&&Number.isFinite(row.points)&&row.points>=0&&row.points<=3;
+  const known=months.flatMap(month=>valid(byMonth.get(month))?[byMonth.get(month)!]:[]);
+  const missing=months.filter(month=>!valid(byMonth.get(month)));
+  const points=selected.groupId==='ST'||!known.length?null:known.reduce((sum,row)=>sum+row.points!,0);
+  const supplied=byMonth.get(selected.month)?.sourceLevel?.replace(/\s/g,'').toUpperCase();
+  const sourceLevel=supplied==='SEC'?'SEC':supplied==='SEC+'?'SEC+':supplied==='SECPRO'?'SEC Pro':null;
+  const level=selected.groupId==='ST'?null:!missing.length&&points!==null?annualCategory(points):sourceLevel;
+  return {fromMonth:months[0],throughMonth:selected.month,months,missing,knownMonths:known.length,partial:missing.length>0,points,level};
+}
 export function annualClosing(reports: readonly MonthlyReport[], selected: MonthlyReport) {
   const year = selected.month.slice(0,4);
   const eligible = activeReports(reports).filter(r => r.month.startsWith(year) && r.month <= selected.month);
   const expected = Array.from({ length: Number(selected.month.slice(5)) }, (_, i) => `${year}-${String(i+1).padStart(2,'0')}`);
   const missing = expected.filter(month => !eligible.some(r => r.month === month));
   const knownMoney = eligible.filter(r => r.premium !== null);
-  const knownPoints = eligible.filter(r => r.points !== null);
   const knownExtras=eligible.filter(r=>r.extrasAvailable!==false);
-  const points = selected.groupId === 'ST' || !knownPoints.length ? null : knownPoints.reduce((sum, r) => sum + r.points!, 0);
-  const sourceLevel = selected.sourceLevel?.replace(/\s/g,'').toUpperCase();
-  const suppliedLevel = sourceLevel==='SEC'?'SEC':sourceLevel==='SEC+'?'SEC+':sourceLevel==='SECPRO'?'SEC Pro':null;
-  // Missing source levels can use the documented annual thresholds only with a complete point history.
-  const completePoints = missing.length===0 && eligible.every(r=>typeof r.points==='number'&&Number.isFinite(r.points)&&r.points>=0&&r.points<=3);
-  const level = selected.groupId==='ST'?null:sourceLevel?suppliedLevel:completePoints&&points!==null?annualCategory(points):null;
   return { year, throughMonth: selected.month, reports: eligible, missing,
-    partial: missing.length > 0 || knownExtras.length < eligible.length || knownMoney.length < eligible.length && selected.groupId !== 'ST' || knownPoints.length < eligible.length && selected.groupId !== 'ST',
+    partial: missing.length > 0 || knownExtras.length < eligible.length || knownMoney.length < eligible.length && selected.groupId !== 'ST',
     premium: knownMoney.length ? knownMoney.reduce((sum,r) => sum + r.premium!,0) : null,
-    points, level,
     extras: knownExtras.length?knownExtras.flatMap(r => r.extras).reduce((sum,e) => sum+e.amount,0):null, extrasPartial:knownExtras.length<eligible.length,
     publicationSetId: eligible.map(r => r.publicationId).join('|'),
   };

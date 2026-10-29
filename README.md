@@ -16,6 +16,12 @@ Deploy this repository from its root as a Next.js project. Configure the product
 
 A Supabase service-role/secret key must never be present in this repository or the frontend environment. Allow the exact Vercel production origin in the backend's `FRONTEND_ORIGINS`. Public variables are embedded at build time; redeploy after changing them.
 
+## Points, premiums and ranking
+
+SEC points and levels use the twelve reporting months ending with the selected closing, across that person's market assignments in the same division. Missing/conflicting point months remain incomplete. Complete point histories determine the level; an explicitly supplied source level can still be shown when the point window is incomplete. Principal and supplementary premium totals remain separate and calendar-year scoped.
+
+Ranking compares complete twelve-month person histories within the same division, with shared positions for equal point totals. Only the signed-in person's own top-ten position is returned; positions beyond ten and other people's results are never sent. At least ten comparable people are required. Outside-top-ten and unavailable states keep the ranking card in place. ST has no invented annual point/ranking model.
+
 ## Checks
 
 `pnpm build`, `pnpm typecheck`, `pnpm lint`. Run `pnpm test` against a running app (`SEC_TEST_URL` overrides localhost for the rendered preview test). Source workbooks and employee data are not distributed with this repository.

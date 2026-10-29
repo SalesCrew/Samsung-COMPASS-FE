@@ -1010,6 +1010,14 @@ button {
 .rank-ladder.is-top-ten .rank-row.is-you span { width: calc(30px * var(--sec-ui-scale, 1)); height: calc(30px * var(--sec-ui-scale, 1)); font-size: max(var(--sec-min-font, 0px), calc(18px * var(--sec-ui-scale, 1))); }
 .rank-ladder.is-top-ten .rank-row b { left: calc(50% + calc(27px * var(--sec-ui-scale, 1))); font-size: max(var(--sec-min-font, 0px), calc(18px * var(--sec-ui-scale, 1))); }
 .leaderboard-note { position: absolute; bottom: calc(20px * var(--sec-ui-scale, 1)); left: calc(15px * var(--sec-ui-scale, 1)); right: calc(15px * var(--sec-ui-scale, 1)); margin: 0; text-align: center; color: var(--sec-copy-muted, var(--sec-muted)); font-size: max(var(--sec-min-font, 0px), calc(16px * var(--sec-ui-scale, 1))); line-height: 1.4; }
+.leaderboard-own { display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: calc(30px * var(--sec-ui-scale, 1)) calc(22px * var(--sec-ui-scale, 1)); text-align: center; gap: calc(22px * var(--sec-ui-scale, 1)); }
+.leaderboard-own h3 { margin: 0; color: var(--sec-text); font-size: max(var(--sec-min-font, 0px), calc(26px * var(--sec-ui-scale, 1))); font-weight: 550; }
+.leaderboard-own header p, .own-rank-privacy { margin: 6px 0 0; color: var(--sec-copy-muted, var(--sec-muted)); font-size: max(var(--sec-min-font, 0px), calc(18px * var(--sec-ui-scale, 1))); line-height: 1.45; }
+.own-rank-result, .own-rank-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(14px * var(--sec-ui-scale, 1)); flex: 1; }
+.own-rank-result > strong { color: var(--sec-blue); font-size: max(var(--sec-min-font, 0px), calc(96px * var(--sec-ui-scale, 1))); letter-spacing: -.055em; line-height: 1; font-weight: 600; }
+.own-rank-result > span, .own-rank-empty > strong { color: var(--sec-text); font-size: max(var(--sec-min-font, 0px), calc(25px * var(--sec-ui-scale, 1))); line-height: 1.4; font-weight: 550; }
+.own-rank-result small, .own-rank-empty p { margin: 0; color: var(--sec-copy-muted, var(--sec-muted)); font-size: max(var(--sec-min-font, 0px), calc(20px * var(--sec-ui-scale, 1))); line-height: 1.5; }
+.own-rank-empty > svg { color: var(--sec-copy-muted, var(--sec-muted)); flex-shrink: 0; }
 
 .chart-card {
   top: calc(1141px * var(--sec-ui-scale, 1));

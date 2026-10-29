@@ -2,7 +2,7 @@
 import { createClient, type Session } from '@supabase/supabase-js';
 import { sessionFetch, SessionUnavailable } from './sessionTransport';
 import type { DASetting, SECGroup } from './groups';
-import type { MonthlyReport } from './monthlyClosing';
+import type { MonthlyReport, PointHistoryEntry } from './monthlyClosing';
 import type { WeeklyTargetSnapshot } from './weeklyTargets';
 
 export type SECAccount={user_id:string;email:string;display_name:string;role:'app_admin'|'department_admin'|'sec';department_ids:SECGroup['id'][];person_id:string|null;primary_department:SECGroup['id']|null;setting:DASetting;active:boolean;must_change_password:boolean;is_test:boolean;notice_version:string|null};
@@ -12,7 +12,8 @@ export type Person={id:string;external_id:string;name:string};
 export type ConfigRow={id:string;department_id:SECGroup['id'];setting:DASetting;effective_month?:string;effective_from?:string;version:number;definition:{metrics:import('./admin').AdminMetric[]};note:string;created_at:string};
 export type ImportRow={id:string;department_id:SECGroup['id'];month:string;phase:import('./admin').ImportPhase;as_of:string;filename:string;sheet:string;mapping:import('./admin').SourceColumnMapping[];status:'draft'|'published'|'rejected';row_count:number;created_at:string;published_at:string|null};
 export type AdminData={reports:PublishedRow[];weekly:PublishedRow[];imports:ImportRow[];configurations:ConfigRow[];people:Person[];assignments:Assignment[]};
-export type DashboardData={profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,{pool:number;rank:number|null;outsideTopTen:boolean}>};
+export type OwnRanking={pool:number;rank:number|null;outsideTopTen:boolean;reason?:'incomplete-history'|'not-enough-participants'|'unavailable'};
+export type DashboardData={profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
 export class SECAPIError extends Error{status:number;code:string;constructor(message:string,status:number,code:string){super(message);this.status=status;this.code=code;}}
 let browserAuth:ReturnType<typeof createClient>|undefined;
 export function secAuth(){

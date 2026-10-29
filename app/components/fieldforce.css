@@ -173,6 +173,8 @@
 .fieldforce-dashboard .points-card .level-label { font-size: 11px; }
 .fieldforce-dashboard .points-card .dashboard-empty { position: relative; min-height: 176px; }
 .fieldforce-dashboard .points-card .points-rules-trigger { top: 6px; left: 6px; }
+.fieldforce-dashboard .leaderboard-own.overview-flow-card { height: auto; min-height: 244px; padding: 18px 14px; }
+.fieldforce-dashboard .fieldforce-heading h1 { overflow-wrap: anywhere; }
 /* Equal premium columns retain both values, including explicit zero and missing. */
 .fieldforce-dashboard .premium-heading h2 { font-size: 16px; }
 .fieldforce-dashboard .premium-heading p { font-size: 12px; }

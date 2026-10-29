@@ -23,11 +23,11 @@ export function PointsRules({ group, onClose }: { group: SECGroup; onClose: () =
         </div>
         <p className="rules-exception">Wenn nur einer der beiden Werte unter 90% liegt, ist die Punktevergabe noch nicht geklärt.</p>
         <h3>Deine Jahreskategorie</h3>
-        <p className="rules-intro">Die Summe deiner monatlichen Punkte.</p>
+        <p className="rules-intro">Die Summe deiner Monatspunkte aus den letzten 12 Monaten bis zum gewählten Abschluss. Der Stand rollt mit jedem neuen Monat weiter.</p>
         <dl className="annual-rules-list">
           {ANNUAL_CATEGORY_RULES.map(rule => <div key={rule.label}><dt>{rule.label}</dt><dd>{rule.range}</dd></div>)}
         </dl>
-        <p className="rules-year-limit">Maximal 3 Punkte × 12 Monate = <b>36 Jahrespunkte</b></p>
+        <p className="rules-year-limit">Maximal 3 Punkte × 12 Monate = <b>36 Punkte</b></p>
       </div>
     </div>
   </div>;

@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, ClipboardCheck, Euro, Headphones, House, Monitor, Refrigerator, Smartphone, Speaker, Tablet, WashingMachine, Watch, Wind } from 'lucide-react';
+import {isProjectAssessment} from '../lib/projectAssessment';
 import { activeReports, monthName, previousMonth, publicationDate, type ClosingMetric, type MonthlyReport } from '../lib/monthlyClosing';
 
 const ICONS = { tv: Monitor, speaker: Speaker, euro: Euro, home: House, phone: Smartphone, watch: Watch, tablet: Tablet, headphones: Headphones, laundry: WashingMachine, fridge: Refrigerator, vacuum: Wind, check: ClipboardCheck };
@@ -32,6 +33,7 @@ export function ClosingMetricExplorer({ title, note, metrics, report, reports, k
     {detail ? <div className="closing-metric-detail">
       <button type="button" className="closing-metric-back" ref={back} onClick={close}><ArrowLeft size={25}/>{kind==='criteria'?'Alle Kriterien':'Alle KPIs'}</button>
       <div className="closing-metric-result" data-result-state={detail.resultState} data-threshold-reached={detail.achievement !== null && detail.achievement >= 90}><span className="closing-metric-detail-icon">{(()=>{const Icon=ICONS[detail.icon];return <Icon size={37} strokeWidth={1.65}/>;})()}</span><h4>{detail.label}</h4><strong>{result(detail)}</strong><p>{kind==='criteria'?'Qualitative Bewertung':'Zielerreichung'} · Monatsabschluss</p></div>
+      {kind==='criteria'&&isProjectAssessment(detail.key)&&<div className="project-assessment-detail"><h5>Einzelbewertungen</h5>{detail.details?.length?<dl className="project-assessment-list">{detail.details.map(item=><div key={item.key}><dt>{item.label}</dt><dd data-result-state={item.resultState} data-threshold-reached={item.resultState==='value'&&item.achievement!==null&&item.achievement>=90}>{item.resultState==='not-applicable'?'Nicht anwendbar':item.resultState==='invalid'?'Nicht verfügbar':item.achievement===null?'Nicht mitgeliefert':number(item.achievement)+'%'}</dd></div>)}</dl>:<p className="closing-metric-note">Für diesen Monatsabschluss wurden keine Einzelbewertungen mitgeliefert.</p>}</div>}
       <dl className="closing-metric-facts">
         {detail.actual !== null && <div><dt>Ist</dt><dd>{number(detail.actual)} <small>{detail.unit}</small></dd></div>}
         {detail.target !== null && <div><dt>Ziel</dt><dd>{number(detail.target)} <small>{detail.unit}</small></dd></div>}

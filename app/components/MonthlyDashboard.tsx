@@ -1,5 +1,5 @@
 import { groupMetricBlocks, type SECGroup } from '../lib/groups';
-import { activeReports, annualClosing, rollingClosing, historyMonthTier, monthName, type MonthlyReport, type PointHistoryEntry } from '../lib/monthlyClosing';
+import { activeReports, annualClosing, rollingPremiums, rollingClosing, historyMonthTier, monthName, type MonthlyReport, type PremiumHistoryEntry, type PointHistoryEntry } from '../lib/monthlyClosing';
 import type { OwnRanking } from '../lib/secApi';
 import type { DashboardFilters } from '../lib/dashboard';
 import { AnnualPointsCard, CategoryHistoryCard, LeaderboardCard } from './AnnualOverview';
@@ -10,16 +10,17 @@ import { ClosingMetricExplorer } from './ClosingMetricExplorer';
 import { KPIReleaseCountdown } from './KPIReleaseCountdown';
 import { CurrentMonthTargets } from './CurrentMonthTargets';
 import type { WeeklyTargetSnapshot } from '../lib/weeklyTargets';
-export function MonthlyDashboard({ group, report, reports, pointHistory, filters, calendarDay, targetSnapshots, unread, latestUnread, onDetails, onLatest, onOpenRules, rulesOpen, onTargetsView, realData=false, ranking }: {
+export function MonthlyDashboard({ group, report, reports, pointHistory, premiumHistory, filters, calendarDay, targetSnapshots, unread, latestUnread, onDetails, onLatest, onOpenRules, rulesOpen, onTargetsView, realData=false, ranking }: {
   group: SECGroup; report: MonthlyReport | null; reports: readonly MonthlyReport[]; filters: DashboardFilters; calendarDay: string;
   targetSnapshots: readonly WeeklyTargetSnapshot[]; unread: boolean; latestUnread: MonthlyReport | null; onDetails: () => void; onLatest: () => void; onOpenRules: () => void; rulesOpen: boolean; onTargetsView: () => void;
-  pointHistory?: readonly PointHistoryEntry[]; realData?: boolean; ranking?: OwnRanking;
+  pointHistory?: readonly PointHistoryEntry[]; premiumHistory?: readonly PremiumHistoryEntry[]; realData?: boolean; ranking?: OwnRanking;
 }) {
   const isST = group.id === 'ST';
   const countdown = <KPIReleaseCountdown calendarDay={calendarDay} />;
   const targets = <CurrentMonthTargets groupId={group.id} setting={filters.daSetting} calendarDay={calendarDay} snapshots={targetSnapshots} onView={onTargetsView} realData={realData} />;
   if (!report) return <div className="monthly-dashboard">{countdown}<section className="configured-card monthly-empty"><h2>Noch kein Monatsabschluss verfügbar</h2><p>Dein Monatsbericht erscheint nach der Veröffentlichung.</p></section><MonthlyPremiumCard report={null} groupId={group.id} /><section id={group.id+'-section-category'} className="monthly-empty-section"><h2>{isST ? 'Jahresübersicht' : 'Punkte & SEC-Level'}</h2><p>Für diesen Datenstand noch nicht verfügbar.</p></section><section id={group.id+'-section-monthly'} />{targets}<PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" /></div>;
   const annual = annualClosing(reports,report);
+  const premiums = rollingPremiums(premiumHistory??activeReports(reports),report.month);
   const history=pointHistory??activeReports(reports);
   const progress=rollingClosing(history,report);
   const defaults = groupMetricBlocks(group.id, report.setting);
@@ -40,7 +41,7 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, filters
       <header className="monthly-section-heading"><h2 id={group.id+'-annual-title'}>{isST ? 'Jahresübersicht' : 'Punkte & SEC-Level'}</h2><p>{isST?`${annual.year} · Stand nach ${monthName(report.month).split(' ')[0]}`:`Letzte 12 Monate · ${monthName(progress.fromMonth)} – ${monthName(progress.throughMonth)}`}</p></header>
       {isST ? <div className="configured-card st-year-coverage"><strong>{annual.reports.length}</strong><div><h3>veröffentlichte Monatsbewertungen</h3><p>{annual.year} · keine bestätigte Jahrespunkte-Regel</p></div></div> : <>
         <div className="configured-overview"><AnnualPointsCard incomplete={progress.partial} knownMonths={progress.knownMonths} points={progress.points} tier={report.tier} month={monthName(report.month)} currentLevel={progress.level} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow />{showRank && <LeaderboardCard pool={pool} rank={rank} reason={ranking?.reason} division={group.id} outsideTopTen={realData ? ranking?.outsideTopTen??false : group.id === 'DA'} flow />}</div>
-        <AnnualPremiumCard annual={annual} /><CategoryHistoryCard native={realData} groupId={group.id} entries={categories} flow anchor={false} />
+        <AnnualPremiumCard premiums={premiums} /><CategoryHistoryCard native={realData} groupId={group.id} entries={categories} flow anchor={false} />
       </>}
       {isST && <PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" />}
     </section>

@@ -1,10 +1,12 @@
 import { annualCategory } from './annual.ts';
+import { presentationProjectDetails, type AssessmentDetail } from './projectAssessment.ts';
 import { presentationAssessmentLabel } from './presentationAssessments.ts';
 import { groupMetricBlocks, qualitativeMetrics, performanceTier, type DASetting, type MetricDefinition, type PerformanceTier, type SECGroup } from './groups.ts';
 
 export type GroupId = SECGroup['id'];
 export type ResultState = 'value' | 'missing' | 'invalid' | 'not-applicable';
-export type ClosingMetric = MetricDefinition & { resultState: ResultState; achievement: number | null; actual: number | null; target: number | null };
+export type ClosingMetric = MetricDefinition & { resultState: ResultState; achievement: number | null; actual: number | null; target: number | null; details?:AssessmentDetail[] };
+export type PremiumHistoryEntry = {month:string;premium:number|null;extras:{type:string;amount:number}[];extrasAvailable?:boolean};
 export type MonthlyReport = {
   reportId: string; publicationId: string; revision: number; groupId: GroupId;
   sourceLevel?: string | null;
@@ -62,7 +64,7 @@ export function closingFixtures(group: GroupId, setting: DASetting = 'full', sce
   let reports = months.map(month => {
     const index = Number(month.slice(5)) - 1;
     const metrics = groupMetricBlocks(group, setting).flatMap(block => block.metrics.map(m => fixtureMetric(m, group, index)));
-    const qualitative = group === 'ST' ? metrics : qualitativeMetrics(group).map(m => ({ ...m, label: m.key === 'knowledge' ? presentationAssessmentLabel(month, m.label) : m.label, resultState: 'value' as const, achievement: group === 'HE' ? 100 : group === 'LH' ? 96 : 98, actual: null, target: null }));
+    const qualitative = group === 'ST' ? metrics : qualitativeMetrics(group).map(m => ({ ...m, label: m.key === 'knowledge' ? presentationAssessmentLabel(month, m.label) : m.label, resultState: 'value' as const, achievement: group === 'HE' ? 100 : group === 'LH' ? 96 : 98, actual: null, target: null, ...(m.key==='project'?{details:presentationProjectDetails(group==='HE'?100:98)}:{}) }));
     const softbonus = group === 'LH' ? 96 : weighted(qualitative);
     const sellout = group === 'ST' ? null : group === 'LH' ? rounding((weighted(metrics.filter(m => m.key.startsWith('he-')))! + weighted(metrics.filter(m => m.key.startsWith('im-')))!)/2) : weighted(metrics);
     const tier = group === 'ST' ? 'unavailable' : performanceTier(group, sellout, softbonus);
@@ -86,7 +88,7 @@ export function closingFixtures(group: GroupId, setting: DASetting = 'full', sce
   }
   if (scenario === 'zero') {
     last.premium = group === 'ST' ? null : 0; last.extras = []; last.sellout = group === 'ST' ? null : 0; last.softbonus = 0;
-    last.metrics = last.metrics.map(m => ({ ...m, achievement: 0, actual: 0 })); last.qualitative = last.qualitative.map(m => ({ ...m, achievement: 0, actual: null }));
+    last.metrics = last.metrics.map(m => ({ ...m, achievement: 0, actual: 0 })); last.qualitative = last.qualitative.map(m => ({ ...m, achievement: 0, actual: null, ...(m.details?{details:presentationProjectDetails(0)}:{}) }));
     last.tier = group === 'ST' ? 'unavailable' : 'bronze'; last.points = group === 'ST' ? null : 1;
   }
   if (scenario === 'correction' || scenario === 'old-correction') {
@@ -136,6 +138,17 @@ export function annualClosing(reports: readonly MonthlyReport[], selected: Month
     extras: knownExtras.length?knownExtras.flatMap(r => r.extras).reduce((sum,e) => sum+e.amount,0):null, extrasPartial:knownExtras.length<eligible.length,
     publicationSetId: eligible.map(r => r.publicationId).join('|'),
   };
+}
+export function rollingPremiums(history:readonly PremiumHistoryEntry[],throughMonth:string){
+  const months=[throughMonth];while(months.length<12)months.unshift(previousMonth(months[0]));
+  const rows=new Map(history.map(row=>[row.month,row]));
+  const eligible=months.flatMap(month=>rows.has(month)?[rows.get(month)!]:[]);
+  const principal=eligible.filter(r=>typeof r.premium==='number'&&Number.isFinite(r.premium));
+  const extras=eligible.filter(r=>r.extrasAvailable!==false&&r.extras.every(e=>Number.isFinite(e.amount)));
+  return {fromMonth:months[0],throughMonth,knownMonths:principal.length,extrasKnownMonths:extras.length,
+    partial:principal.length<12||extras.length<12,
+    premium:principal.length?principal.reduce((sum,r)=>sum+r.premium!,0):null,
+    extras:extras.length?extras.flatMap(r=>r.extras).reduce((sum,e)=>sum+e.amount,0):null};
 }
 export function compareClosing(report: MonthlyReport, reports: readonly MonthlyReport[], key: 'sellout' | 'softbonus') {
   const prior = activeReports(reports).find(r => r.month === previousMonth(report.month));

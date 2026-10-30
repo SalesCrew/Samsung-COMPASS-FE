@@ -349,7 +349,7 @@ function withOpacity(hex: string, opacity: number) {
 }
 
 
-export type LivePhoneData = { personName?: string; market?: string; groupId: SECGroup['id']; setting: DASetting; reports: readonly MonthlyReport[]; pointHistory?: readonly import('../lib/monthlyClosing').PointHistoryEntry[]; targetSnapshots: readonly WeeklyTargetSnapshot[]; calendarDay: string; readIds: readonly string[]; acknowledge: (reports: readonly MonthlyReport[]) => void; rankings?: Record<string,import('../lib/secApi').OwnRanking> };
+export type LivePhoneData = { personName?: string; market?: string; groupId: SECGroup['id']; setting: DASetting; reports: readonly MonthlyReport[]; pointHistory?: readonly import('../lib/monthlyClosing').PointHistoryEntry[]; premiumHistory?: readonly import('../lib/monthlyClosing').PremiumHistoryEntry[]; targetSnapshots: readonly WeeklyTargetSnapshot[]; calendarDay: string; readIds: readonly string[]; acknowledge: (reports: readonly MonthlyReport[]) => void; rankings?: Record<string,import('../lib/secApi').OwnRanking> };
 function SECPhone({ group, panel, scenario, setting, onOpenPanel, onClosePanel, live, context }: {
  group: SECGroup; panel: PhonePanel | null; scenario: PreviewScenario; setting: DASetting;
  onOpenPanel:(panel:PhonePanel)=>void; onClosePanel:()=>void; live?: LivePhoneData; context?: ReactNode;
@@ -397,7 +397,7 @@ function SECPhone({ group, panel, scenario, setting, onOpenPanel, onClosePanel, 
 
      {scenario==='lag'&&<p className="monthly-lag-note">September noch nicht veröffentlicht.</p>}
      {scenario==='offline'&&<div className="monthly-lag-note" role="status">Aktualisierung nicht möglich. Dein letzter Abschluss bleibt verfügbar. <button onClick={()=>onOpenPanel('updates')}>Gespeicherten Stand ansehen</button></div>}
-     <MonthlyDashboard group={group} report={report} reports={reports} pointHistory={live?.pointHistory} filters={filters} calendarDay={calendarDay} targetSnapshots={targetSnapshots} unread={!!report&&unread.has(report.publicationId)} latestUnread={latestUnread} onDetails={viewDetails} onLatest={viewLatest} onOpenRules={()=>{cancelNavigation();onOpenPanel('rules');}} rulesOpen={panel==='rules'} onTargetsView={()=>scrollToSection('targets',undefined,{instant:true})} realData={!!live} ranking={report?live?.rankings?.[report.month]:undefined}/>
+     <MonthlyDashboard group={group} report={report} reports={reports} pointHistory={live?.pointHistory} premiumHistory={live?.premiumHistory} filters={filters} calendarDay={calendarDay} targetSnapshots={targetSnapshots} unread={!!report&&unread.has(report.publicationId)} latestUnread={latestUnread} onDetails={viewDetails} onLatest={viewLatest} onOpenRules={()=>{cancelNavigation();onOpenPanel('rules');}} rulesOpen={panel==='rules'} onTargetsView={()=>scrollToSection('targets',undefined,{instant:true})} realData={!!live} ranking={report?live?.rankings?.[report.month]:undefined}/>
     </div>
    </div>
    <nav className="bottom-dock" aria-label="Dashboard-Abschnitte">

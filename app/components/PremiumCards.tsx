@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { monthName, type GroupId, type MonthlyReport, type annualClosing } from '../lib/monthlyClosing';
+import { monthName, type GroupId, type MonthlyReport, type rollingPremiums } from '../lib/monthlyClosing';
 const money = (n: number) => new Intl.NumberFormat('de-AT', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }).format(n);
 const amountStyle=(...values:(number|null|undefined)[])=>({'--premium-characters':Math.max(1,...values.map(value=>value==null?1:money(value).length))} as CSSProperties);
 export function MonthlyPremiumCard({ report, groupId }: { report: MonthlyReport | null; groupId: GroupId }) {
@@ -19,12 +19,12 @@ export function MonthlyPremiumCard({ report, groupId }: { report: MonthlyReport 
     </div>}
   </section>;
 }
-export function AnnualPremiumCard({ annual }: { annual: ReturnType<typeof annualClosing> }) {
-  return <section className="configured-card annual-premium-card" aria-label={`Hauptprämien ${annual.year}`} data-annual-basis={annual.publicationSetId}>
-    <header className="premium-heading"><div><h2>Hauptprämien {annual.year}</h2></div></header>
-    <div className="premium-split" style={amountStyle(annual.premium,annual.extras)}>
-      <div className="premium-column"><h3>Hauptprämie</h3><div className="annual-premium-amount" data-has-premium={annual.premium !== null && annual.premium > 0}><strong>{annual.premium === null ? '—' : money(annual.premium)}</strong>{annual.premium !== null && <span>€</span>}</div></div>
-      <div className="premium-column"><h3>Zusatzprämie</h3><div className="annual-premium-amount premium-extra-amount"><strong>{annual.extras===null?'—':money(annual.extras)}</strong>{annual.extras!==null&&<span>€</span>}</div><p className="premium-column-note">{annual.extras===null?'Noch nicht verfügbar':annual.extras>0?'Separat':'Keine Zusatzprämie'}</p></div>
+export function AnnualPremiumCard({ premiums }: { premiums: ReturnType<typeof rollingPremiums> }) {
+  return <section className="configured-card annual-premium-card" aria-label="Prämien · letzte 12 Monate">
+    <header className="premium-heading"><div><h2>Prämien · letzte 12 Monate</h2><p>{monthName(premiums.fromMonth)} – {monthName(premiums.throughMonth)}</p></div></header>
+    <div className="premium-split" style={amountStyle(premiums.premium,premiums.extras)}>
+      <div className="premium-column"><h3>Hauptprämie</h3><div className="annual-premium-amount" data-has-premium={premiums.premium !== null && premiums.premium > 0}><strong>{premiums.premium === null ? '—' : money(premiums.premium)}</strong>{premiums.premium !== null && <span>€</span>}</div>{premiums.knownMonths<12&&<p className="premium-column-note">{premiums.knownMonths} von 12 Monaten verfügbar</p>}</div>
+      <div className="premium-column"><h3>Zusatzprämie</h3><div className="annual-premium-amount premium-extra-amount"><strong>{premiums.extras===null?'—':money(premiums.extras)}</strong>{premiums.extras!==null&&<span>€</span>}</div><p className="premium-column-note">{premiums.extrasKnownMonths<12?`${premiums.extrasKnownMonths} von 12 Monaten verfügbar`:(premiums.extras??0)>0?'Separat':'Keine Zusatzprämie'}</p></div>
     </div>
   </section>;
 }

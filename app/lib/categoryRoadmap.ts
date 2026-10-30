@@ -1,5 +1,11 @@
 export type RoadmapEntry = { category: string };
 
+/** Start at the first known level; retain later gaps instead of inventing continuity. */
+export function visibleCategoryHistory<T extends RoadmapEntry>(entries:readonly T[]):readonly T[]{
+  const start=entries.findIndex(entry=>['SEC','SEC+','SEC Pro'].includes(entry.category));
+  return start<0?[]:entries.slice(start);
+}
+
 const CARD_WIDTH = 473;
 export const CATEGORY_ROADMAP = { nodeSize:82, pitch:128, edge:27, height:190, proTop:19, plusTop:43, baseTop:94 };
 // Native typography is larger than a half-size artboard label; reserve enough room for both lines.

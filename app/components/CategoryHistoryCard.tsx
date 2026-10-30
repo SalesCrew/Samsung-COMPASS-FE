@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { CATEGORY_ROADMAP, NATIVE_CATEGORY_ROADMAP, categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth } from '../lib/categoryRoadmap';
+import { CATEGORY_ROADMAP, NATIVE_CATEGORY_ROADMAP, categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth, visibleCategoryHistory } from '../lib/categoryRoadmap';
 import { type PerformanceTier } from '../lib/groups';
 import { secLevelTier } from '../lib/annual';
 
 export type CategoryEntry = { id: string; short: string; category: string; label?: string; tier?:PerformanceTier };
 
-export function CategoryHistoryCard({ groupId, entries, flow = false, anchor = true, native = false }: {
+export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = false, anchor = true, native = false }: {
   groupId: string; entries: readonly CategoryEntry[]; flow?: boolean; anchor?: boolean; native?: boolean;
 }) {
+  const entries=visibleCategoryHistory(sourceEntries);
   const viewport = useRef<HTMLDivElement>(null);
   const lastShown = useRef<string | null>(null);
   const followLatest = useRef(true);
@@ -68,6 +69,6 @@ export function CategoryHistoryCard({ groupId, entries, flow = false, anchor = t
         <svg className="category-route" viewBox={`0 0 ${trackWidth} ${trackHeight}`} preserveAspectRatio="none" aria-hidden="true">{categoryRoadmapPaths(entries, trackWidth,geometry).map((path, index) => <path key={entries[index].id} d={path}/>)}</svg>
         {entries.map((entry, index) => <div key={entry.id} className={`category-node tier-${secLevelTier(entry.category)}${index === entries.length - 1 ? ' is-latest' : ''}`} style={(()=>{const position=categoryNodePosition(index,entries.length,entry.category,trackWidth,geometry);return{left:position.left*scale,top:(single?geometry.edge:position.top)*scale};})()} role="listitem" aria-label={`${entry.label ?? entry.short}: ${entry.category === '—' ? 'Level noch nicht verfügbar' : entry.category}`}><small>{entry.short}</small><strong>{entry.category}</strong></div>)}
       </div>
-    </div> : <p className="category-empty">Kein Kategoriestand im Zeitraum</p>}
+    </div> : <p className="category-empty">Noch kein SEC-Level verfügbar</p>}
   </section>;
 }

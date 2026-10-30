@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { NATIVE_CATEGORY_ROADMAP, categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth } from '../app/lib/categoryRoadmap.ts';
+import { NATIVE_CATEGORY_ROADMAP, categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth, visibleCategoryHistory } from '../app/lib/categoryRoadmap.ts';
+
+test('history starts at the first known SEC level and keeps later source gaps explicit',()=>{
+ const unknown=Array.from({length:11},(_,i)=>({id:new Date(Date.UTC(2024,9+i,1)).toISOString().slice(0,7),category:'—'}));
+ const known=[{id:'2025-09',category:'SEC+'},{id:'2025-10',category:'SEC+'},{id:'2025-11',category:'—'},{id:'2025-12',category:'SEC Pro'}];
+ const rows=[...unknown,...known],before=JSON.stringify(rows),visible=visibleCategoryHistory(rows);
+ assert.deepEqual(visible,known);assert.equal(visible[0].id,'2025-09');assert.equal(JSON.stringify(rows),before);
+ assert.deepEqual(categoryRoadmapPaths(visible).slice(1),['','']);
+ assert.deepEqual(visibleCategoryHistory(unknown),[]);assert.deepEqual(visibleCategoryHistory([]),[]);
+ assert.deepEqual(visibleCategoryHistory([...unknown,known[0]]),[known[0]]);
+});
 
 test('shared roadmap rises, stays level, and falls with the real category', () => {
   const entries = [{ category: 'SEC' }, { category: 'SEC+' }, { category: 'SEC+' }, { category: 'SEC' }];

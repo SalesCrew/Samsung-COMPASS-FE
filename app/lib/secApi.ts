@@ -13,7 +13,7 @@ export type ConfigRow={id:string;department_id:SECGroup['id'];setting:DASetting;
 export type ImportRow={id:string;department_id:SECGroup['id'];month:string;phase:import('./admin').ImportPhase;as_of:string;filename:string;sheet:string;mapping:import('./admin').SourceColumnMapping[];status:'draft'|'published'|'rejected';row_count:number;created_at:string;published_at:string|null};
 export type AdminData={reports:PublishedRow[];weekly:PublishedRow[];imports:ImportRow[];configurations:ConfigRow[];people:Person[];assignments:Assignment[]};
 export type OwnRanking={pool:number;rank:number|null;outsideTopTen:boolean;reason?:'incomplete-history'|'not-enough-participants'|'unavailable'};
-export type DashboardData={profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
+export type DashboardData={presentation?:boolean;profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
 export class SECAPIError extends Error{status:number;code:string;constructor(message:string,status:number,code:string){super(message);this.status=status;this.code=code;}}
 let browserAuth:ReturnType<typeof createClient>|undefined;
 export function secAuth(){

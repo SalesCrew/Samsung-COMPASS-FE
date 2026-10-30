@@ -1,4 +1,5 @@
 import { annualCategory } from './annual.ts';
+import { presentationAssessmentLabel } from './presentationAssessments.ts';
 import { groupMetricBlocks, qualitativeMetrics, performanceTier, type DASetting, type MetricDefinition, type PerformanceTier, type SECGroup } from './groups.ts';
 
 export type GroupId = SECGroup['id'];
@@ -61,7 +62,7 @@ export function closingFixtures(group: GroupId, setting: DASetting = 'full', sce
   let reports = months.map(month => {
     const index = Number(month.slice(5)) - 1;
     const metrics = groupMetricBlocks(group, setting).flatMap(block => block.metrics.map(m => fixtureMetric(m, group, index)));
-    const qualitative = group === 'ST' ? metrics : qualitativeMetrics(group).map(m => ({ ...m, resultState: 'value' as const, achievement: group === 'HE' ? 100 : group === 'LH' ? 96 : 98, actual: null, target: null }));
+    const qualitative = group === 'ST' ? metrics : qualitativeMetrics(group).map(m => ({ ...m, label: m.key === 'knowledge' ? presentationAssessmentLabel(month, m.label) : m.label, resultState: 'value' as const, achievement: group === 'HE' ? 100 : group === 'LH' ? 96 : 98, actual: null, target: null }));
     const softbonus = group === 'LH' ? 96 : weighted(qualitative);
     const sellout = group === 'ST' ? null : group === 'LH' ? rounding((weighted(metrics.filter(m => m.key.startsWith('he-')))! + weighted(metrics.filter(m => m.key.startsWith('im-')))!)/2) : weighted(metrics);
     const tier = group === 'ST' ? 'unavailable' : performanceTier(group, sellout, softbonus);

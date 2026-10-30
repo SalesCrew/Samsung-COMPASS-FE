@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { annualCategory, annualDots, categoryRailPosition, leaderboardState } from '../app/lib/annual.ts';
+import { annualCategory, annualDots, categoryRailPosition, leaderboardState, secLevelTier } from '../app/lib/annual.ts';
 
 test('annual rings share HE geometry and emphasize exactly the last three earned dots', () => {
   for (let points = 0; points <= 36; points++) {
@@ -30,6 +30,13 @@ test('category thresholds remain SEC 0–20, SEC+ 21–31, SEC Pro 32+', () => {
   assert.equal(annualCategory(21), 'SEC+');
   assert.equal(annualCategory(31), 'SEC+');
   assert.equal(annualCategory(32), 'SEC Pro');
+});
+
+test('SEC history colours follow the level rather than the selected month medal', () => {
+  assert.equal(secLevelTier('SEC'), 'bronze');
+  assert.equal(secLevelTier('SEC+'), 'silver');
+  assert.equal(secLevelTier('SEC Pro'), 'gold');
+  for (const unknown of ['', '—', 'Unbekannt']) assert.equal(secLevelTier(unknown), 'unavailable');
 });
 
 test('leaderboards suppress pools under ten and never show a place outside the top ten', () => {

@@ -5,6 +5,11 @@ export function annualCategory(points: number): 'SEC' | 'SEC+' | 'SEC Pro' {
   return points >= 32 ? 'SEC Pro' : points >= 21 ? 'SEC+' : 'SEC';
 }
 
+/** Level history colours describe the SEC level, independently of monthly performance. */
+export function secLevelTier(level: string): 'bronze' | 'silver' | 'gold' | 'unavailable' {
+  return level === 'SEC' ? 'bronze' : level === 'SEC+' ? 'silver' : level === 'SEC Pro' ? 'gold' : 'unavailable';
+}
+
 export function annualDots(points: number) {
   const completed = Math.max(0, Math.min(ANNUAL_MAXIMUM, Math.floor(points)));
   const remaining = ANNUAL_MAXIMUM - completed;

@@ -68,6 +68,7 @@
 .fieldforce-dashboard .category-history-heading { height: auto; min-height: 44px; padding: 8px 14px 0; }
 .fieldforce-dashboard .category-history-heading button { width: 32px; height: 32px; padding: 0; }
 .fieldforce-dashboard .category-history-heading h3 { font-size: 13px; }
+.fieldforce-dashboard .category-node { padding: 4px; gap: 3px; }
 .fieldforce-dashboard .category-node small { font-size: 10px; }
 .fieldforce-dashboard .category-node strong { font-size: 11px; }
 .fieldforce-dashboard .points-rules-trigger { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
@@ -201,6 +202,4 @@ html:has(.is-fieldforce)::-webkit-scrollbar { display: none; }
 .fieldforce-dashboard .filter-select-label { gap: 6px; margin-bottom: 14px; font-size: 12px; }
 .fieldforce-dashboard .dashboard-filter-footer > p { margin-bottom: 10px; font-size: 11px; }
 .fieldforce-dashboard .filter-close svg, .fieldforce-dashboard .points-rules-trigger svg, .fieldforce-dashboard .performance-chart-info svg { width: 16px; height: 16px; }
-.fieldforce-dashboard .category-card.is-single-history .category-history-scroll, .fieldforce-dashboard .category-card.is-single-history .category-history-track { height: 64px; }
-.fieldforce-dashboard .category-card.is-single-history .category-node { width: 44px; height: 44px; }
 .fieldforce-dashboard .closing-metric-tile[data-result-state=not-applicable] > strong, .fieldforce-dashboard .closing-metric-result[data-result-state=not-applicable] > strong { font-size: 13px; line-height: 1.4; color: var(--sec-copy-muted); letter-spacing: 0; }

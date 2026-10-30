@@ -14,6 +14,10 @@ export type MonthlyReport = {
   metrics: ClosingMetric[]; qualitative: ClosingMetric[]; changed: string[];
 };
 export type PointHistoryEntry = { month: string; points: number | null; sourceLevel?: string | null };
+/** Use the same supplied monthly category as the summary; point-only history has documented 1/2/3 awards. */
+export function historyMonthTier(points:number|null,report?:Pick<MonthlyReport,'tier'|'points'>):PerformanceTier {
+  return report?(report.points===null?'unavailable':report.tier):(points===3?'gold':points===2?'silver':points===1?'bronze':'unavailable');
+}
 export type PreviewScenario = 'standard' | 'new-month' | 'release-window' | 'correction' | 'old-correction' | 'missing' | 'zero' | 'partial' | 'percent-only' | 'empty' | 'lag' | 'offline';
 export const PREVIEW_SCENARIOS: { value: PreviewScenario; label: string }[] = [
   { value: 'standard', label: 'Neuer September-Abschluss' }, { value: 'new-month', label: 'Oktober kommt hinzu' },

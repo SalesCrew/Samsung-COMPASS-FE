@@ -1,5 +1,5 @@
 import { groupMetricBlocks, type SECGroup } from '../lib/groups';
-import { activeReports, annualClosing, rollingClosing, monthName, type MonthlyReport, type PointHistoryEntry } from '../lib/monthlyClosing';
+import { activeReports, annualClosing, rollingClosing, historyMonthTier, monthName, type MonthlyReport, type PointHistoryEntry } from '../lib/monthlyClosing';
 import type { OwnRanking } from '../lib/secApi';
 import type { DashboardFilters } from '../lib/dashboard';
 import { AnnualPointsCard, CategoryHistoryCard, LeaderboardCard } from './AnnualOverview';
@@ -30,7 +30,8 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, filters
   const rank = realData ? ranking?.rank??null : group.id === 'HE' ? 7 : group.id === 'IM' ? 4 : null;
   const pool = realData ? ranking?.pool??0 : group.id === 'LH' ? 4 : group.id === 'DA' ? 31 : group.id === 'IM' ? 28 : 24;
   const showRank = !isST;
-  const categories = history.filter(r => r.month <= report.month).map(r => ({ id: r.month, label: monthName(r.month), short: monthName(r.month,true)+(r.month.startsWith(annual.year) ? '' : ' '+r.month.slice(2,4)), category: rollingClosing(history,{month:r.month,groupId:group.id}).level ?? '—' }));
+  const monthlyReports=new Map(activeReports(reports).map(r=>[r.month,r]));
+  const categories = history.filter(r => r.month <= report.month).map(r => ({ id: r.month, label: monthName(r.month), short: monthName(r.month,true)+(r.month.startsWith(annual.year) ? '' : ' '+r.month.slice(2,4)), category: rollingClosing(history,{month:r.month,groupId:group.id}).level ?? '—',tier:historyMonthTier(r.points,monthlyReports.get(r.month)) }));
   return <div className="monthly-dashboard">
     {countdown}
     <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} />

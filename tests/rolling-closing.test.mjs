@@ -1,12 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {activeReports,annualClosing,closingFixtures,rollingClosing} from '../app/lib/monthlyClosing.ts';
+import {activeReports,annualClosing,closingFixtures,rollingClosing,historyMonthTier} from '../app/lib/monthlyClosing.ts';
 
 function history(end='2026-02',points=2){
  const row=closingFixtures('IM').at(-1),months=[];let date=new Date(end+'-01T00:00:00Z');
  for(let i=0;i<12;i++){months.unshift(date.toISOString().slice(0,7));date.setUTCMonth(date.getUTCMonth()-1);}
  return months.map(month=>({...row,month,points,sourceLevel:null,premium:100,extras:[{type:'On-top',amount:5}],extrasAvailable:true}));
 }
+test('history ring colors follow the supplied monthly category, with only known point awards as fallback',()=>{
+ assert.equal(historyMonthTier(1),'bronze');assert.equal(historyMonthTier(2),'silver');assert.equal(historyMonthTier(3),'gold');
+ for(const points of [null,0,-1,4,2.5,NaN])assert.equal(historyMonthTier(points),'unavailable');
+ for(const tier of ['gold','silver','bronze','unresolved','unavailable'])assert.equal(historyMonthTier(3,{tier,points:3}),tier);
+ assert.equal(historyMonthTier(3,{tier:'gold',points:null}),'unavailable');
+ // SEC/SEC+/SEC Pro are rolling levels: they must not replace the monthly Gold/Silber/Bronze category.
+ const rows=history('2026-09',3);assert.equal(rollingClosing(rows,rows.at(-1)).level,'SEC Pro');assert.equal(historyMonthTier(3,{tier:'bronze',points:1}),'bronze');
+});
 test('points and levels roll across January while premiums remain calendar-year scoped',()=>{
  const rows=history(),selected=rows.at(-1),rolling=rollingClosing(rows,selected),annual=annualClosing(rows,selected);
  assert.equal(rolling.fromMonth,'2025-03');assert.equal(rolling.throughMonth,'2026-02');

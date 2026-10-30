@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth } from '../app/lib/categoryRoadmap.ts';
+import { NATIVE_CATEGORY_ROADMAP, categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth } from '../app/lib/categoryRoadmap.ts';
 
 test('shared roadmap rises, stays level, and falls with the real category', () => {
   const entries = [{ category: 'SEC' }, { category: 'SEC+' }, { category: 'SEC+' }, { category: 'SEC' }];
@@ -43,4 +43,19 @@ test('short histories remain centered without artificial spacing and unknown lev
   assert.equal(first.left, width - second.left - 82);
   assert.equal(categoryNodePosition(0, 1, 'SEC', 752).left, (752 - 82) / 2);
   assert.deepEqual(categoryRoadmapPaths([{category:'SEC'}, {category:'—'}, {category:'SEC+'}], 752), ['', '']);
+});
+
+test('native circles reserve readable two-line space and share their bounds with every connector',()=>{
+ const g=NATIVE_CATEGORY_ROADMAP;assert.ok(g.nodeSize*.5>=56);
+ for(const count of [1,2,3,24])for(const viewport of [288,328,380,568]){
+  const entries=Array.from({length:count},(_,i)=>({category:['SEC','SEC+','SEC Pro'][i%3]}));
+  const width=categoryTrackWidth(count,viewport/.5,g),nodes=entries.map((e,i)=>categoryNodePosition(i,count,e.category,width,g));
+  assert.ok(nodes[0].left>=g.edge);assert.ok(nodes.at(-1).left+g.nodeSize<=width-g.edge);
+  assert.ok(nodes.every(n=>n.top>=0&&n.top+g.nodeSize<=g.height));
+  categoryRoadmapPaths(entries,width,g).forEach((path,i)=>{
+   assert.ok(path.startsWith('M '+(nodes[i].left+g.nodeSize)+' '+(nodes[i].top+g.nodeSize/2)+' '));
+   assert.ok(path.endsWith(' H '+nodes[i+1].left));
+   assert.ok(nodes[i].left+g.nodeSize<nodes[i+1].left);
+  });
+ }
 });

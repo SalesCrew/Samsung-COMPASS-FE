@@ -47,7 +47,7 @@ export function ConfiguredDashboard({ group, filters, onOpenFilters, onOpenRules
   const showLeaderboard = !isST && leaderboardState(demo.pool, hasResult ? demo.rank : null).visible;
   const categories = historyRows(filters).filter(row => row.id >= '2026-06').flatMap(row => {
     const snapshot = groupDemoAt(group.id, { ...filters, month: row.id, snapshot: 'latest' });
-    return snapshot ? [{ id: row.id, short: row.short, category: annualCategory(snapshot.annualPoints) }] : [];
+    return snapshot ? [{ id: row.id, short: row.short, category: annualCategory(snapshot.annualPoints), tier:snapshot.tier }] : [];
   });
   return <main className="configured-dashboard">
     <IncentiveCard group={group} month={filters.month} asOf={cutoff(filters)} />

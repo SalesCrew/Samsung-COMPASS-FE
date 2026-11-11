@@ -29,3 +29,5 @@
 
 .import-next-step ol { margin:4px 0 0; padding-left:18px; }
 .import-next-step li + li { margin-top:5px; }
+
+.import-next-step ol,.import-problem-list ol { list-style:decimal; }

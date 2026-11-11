@@ -411,7 +411,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
               <div className="admin-release-summary">
                 <div><span>Aktiver Stand</span><strong>{sameMonthImports.length ? `v${sameMonthImports.length} · ${PHASES.find(p => p.value === sameMonthImports.at(-1)?.phase)?.label ?? 'Import'}` : 'Keiner'}</strong></div>
                 <div><span>Neuer Stand</span><strong>{selectedSheet ? `${importGroup} · ${importMonth}` : 'Datei wählen'}</strong></div>
-                <div><span>Mapping</span><strong>{selectedSheet ? `${mappedColumns.filter(m => m.column).length} zugeordnet · ${unresolvedColumns.length + mappedColumns.filter(m => !m.column).length} offen` : '—'}</strong></div>
+                <div><span>Mapping</span><strong>{selectedSheet ? `${mappedColumns.filter(m => m.column).length} Excel-Spalten gewählt` : '—'}</strong></div>
                 <div><span>Split</span><strong>{splitCategories.length ? splitCategories.map(key => ({group:'Gruppe', setting:'DA-Setting', block:'KPI-Bereich', metric:'Kennzahl', market:'Markt', person:'Person', snapshot:'Datenstand'}[key])).join(' · ') : 'Nicht gewählt'}</strong></div>
               </div>
               {remote ? <>

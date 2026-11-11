@@ -94,4 +94,7 @@ export function explainImportFailure(message: string): ImportProblem {
   return problem('Die Anfrage konnte nicht abgeschlossen werden.', 'Prüfe deine Internetverbindung und versuche denselben Schritt erneut. Wähle die Datei erneut aus, falls die Vorschau abgelaufen ist. Bleibt der Fehler bestehen, sende dem Support einen Screenshot.');
 }
 
-export const uniqueProblems = (problems: ImportProblem[]) => problems.filter((problem, index) => problems.findIndex(p => p.target === problem.target && p.title === problem.title && p.location === problem.location) === index);
+export function uniqueProblems(problems: ImportProblem[]): ImportProblem[] {
+  const seen = new Set<string>();
+  return problems.filter(problem => { const key = JSON.stringify([problem.target, problem.title, problem.location]); if (seen.has(key)) return false; seen.add(key); return true; });
+}

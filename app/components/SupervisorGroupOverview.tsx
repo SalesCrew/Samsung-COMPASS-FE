@@ -21,7 +21,7 @@ export function SupervisorGroupOverview({data}:{data:SupervisorGroupData}){
  const[selectedMonth,setSelectedMonth]=useState('');
  const selected=data.months.find(m=>m.month===selectedMonth)??data.months.at(-1);
  const through=selected?.month??data.calendarDay.slice(0,7);
- const history=data.months.filter(m=>m.month<=through).slice(-12);
+ const history=data.months.filter(m=>m.month<=through&&(!selected||m.month>=selected.rolling.fromMonth));
  const weekly=data.weekly.stands.at(-1);
  const isST=data.groupId==='ST';
  return <div className="fieldforce-dashboard supervisor-group-view" data-testid="supervisor-group" data-group={data.groupId}>
@@ -63,7 +63,9 @@ function GroupMetricSection({title,metrics,division,histories,weekly=false}:{tit
 
 function GroupTrend({history,isST}:{history:GroupAverageMonth[];isST:boolean}){
  const max=Math.max(110,...history.flatMap(m=>[m.sellout.value??0,m.softbonus.value??0]));
- const x=(i:number)=>history.length===1?300:35+i*530/(history.length-1),y=(v:number)=>155-v/max*130;
- const path=(key:'sellout'|'softbonus')=>history.map((m,i)=>m[key].value===null?'':(i&&history[i-1][key].value!==null?'L':'M')+x(i)+','+y(m[key].value!)).join(' ');
+ const ordinal=(month:string)=>Number(month.slice(0,4))*12+Number(month.slice(5));
+ const start=ordinal(history[0].month),end=ordinal(history.at(-1)!.month);
+ const x=(i:number)=>start===end?300:35+(ordinal(history[i].month)-start)*530/(end-start),y=(v:number)=>155-v/max*130;
+ const path=(key:'sellout'|'softbonus')=>history.map((m,i)=>m[key].value===null?'':(i&&history[i-1][key].value!==null&&ordinal(m.month)-ordinal(history[i-1].month)===1?'L':'M')+x(i)+','+y(m[key].value!)).join(' ');
  return <section className="configured-card group-trend" aria-label="Durchschnittlicher Monatsverlauf"><header className="group-card-heading"><h2>Monatsverlauf</h2><span>Gruppendurchschnitt</span></header><div className="group-trend-legend">{!isST&&<span><i/>Sell-out</span>}<span><i/>Softbonus</span></div><svg viewBox="0 0 600 200" role="img" aria-label="Verlauf der durchschnittlichen Zielerreichung"><line x1="35" x2="565" y1={y(100)} y2={y(100)} className="group-target-line"/><text x="35" y={y(100)-9}>100%</text>{(!isST?['sellout','softbonus']:['softbonus']).map(key=><g key={key} className={'group-trend-'+key}><path d={path(key as 'sellout'|'softbonus')}/>{history.map((m,i)=>m[key as 'sellout'|'softbonus'].value===null?null:<circle key={m.month} cx={x(i)} cy={y(m[key as 'sellout'|'softbonus'].value!)} r="4"><title>{monthName(m.month)}: {number(m[key as 'sellout'|'softbonus'].value!)}%</title></circle>)}</g>)}{history.map((m,i)=>(i===0||i===history.length-1||i%3===0)&&<text key={m.month} x={x(i)} y="185" textAnchor={i===0?'start':i===history.length-1?'end':'middle'}>{monthName(m.month,true)}</text>)}</svg><details><summary>Monatswerte ansehen</summary><table className="group-history-table"><thead><tr><th scope="col">Monat</th>{!isST&&<th scope="col">Ø Sell-out</th>}<th scope="col">Ø Softbonus</th></tr></thead><tbody>{history.map(row=><tr key={row.month}><th scope="row">{monthName(row.month,true)} {row.month.slice(2,4)}</th>{(!isST?[row.sellout,row.softbonus]:[row.softbonus]).map((m,i)=><td key={i}>{m.value===null?'—':number(m.value)+'%'}<small>{coverage(m)}</small></td>)}</tr>)}</tbody></table></details></section>;
 }

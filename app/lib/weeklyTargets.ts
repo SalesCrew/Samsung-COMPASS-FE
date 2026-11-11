@@ -28,7 +28,7 @@ export function currentTargets(snapshots: readonly WeeklyTargetSnapshot[], group
 }
 
 export function targetAchievement(actual: number | null, target: number | null) {
-  return actual !== null && target !== null && Number.isFinite(actual) && Number.isFinite(target) && actual >= 0 && target > 0
+  return actual !== null && target !== null && Number.isFinite(actual) && Number.isFinite(target) && target > 0
     ? Math.round(actual / target * 1000) / 10 : null;
 }
 
@@ -48,7 +48,7 @@ export function targetProgressHistory(snapshots: readonly WeeklyTargetSnapshot[]
     const previous = history[index - 1];
     // Compare adjacent cumulative stands, never a missing basis or an older month.
     const difference = stand.unit===previous?.unit && stand.actual !== null && previous?.actual != null
-      && Number.isFinite(stand.actual) && Number.isFinite(previous.actual) && stand.actual >= 0 && previous.actual >= 0
+      && Number.isFinite(stand.actual) && Number.isFinite(previous.actual)
       ? Math.round((stand.actual - previous.actual) * 10) / 10 : null;
     return { ...stand, change: difference !== null && Number.isFinite(difference) ? difference || 0 : null, previousAsOf: previous?.asOf ?? null };
   });

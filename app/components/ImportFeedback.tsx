@@ -8,7 +8,7 @@ export function focusImportField(target: string) {
     const wrapper = document.getElementById(importFieldId(target)) ?? document.getElementById(importFieldId('mapping'));
     if (!wrapper) return;
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const control = wrapper.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]');
+    const control = Array.from(wrapper.querySelectorAll<HTMLElement>('summary, button:not([disabled]), input:not([disabled]), [tabindex]')).find(element => element.getClientRects().length > 0);
     (control ?? wrapper).focus({ preventScroll: true });
   }));
 }

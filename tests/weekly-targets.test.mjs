@@ -76,7 +76,7 @@ test('weekly corrections replace their dated history row without adding duplicat
   assert.equal(history.length,3);assert.equal(history[1].actual,0);assert.equal(history[1].target,55);assert.equal(history[1].achievement,0);assert.equal(history[2].actual,21);
   assert.equal(history[2].change,21);
   assert.ok(targetProgressHistory(weeklyTargetFixtures('ST'), 'ST', 'full', '2026-10-12', 'pos').every(s => s.achievement === null));
-  for(const [actual,target] of [[null,50],[10,null],[10,0],[10,Infinity],[NaN,50],[-1,50]])assert.equal(targetAchievement(actual,target),null);
+  for(const [actual,target] of [[null,50],[10,null],[10,0],[10,Infinity],[NaN,50],[10,-5]])assert.equal(targetAchievement(actual,target),null);
   assert.equal(targetAchievement(0,50),0);assert.equal(targetAchievement(45,50),90);assert.equal(targetAchievement(53,50),106);
 });
 
@@ -89,7 +89,7 @@ test('weekly changes compare adjacent actuals, including zero, declines and targ
   assert.equal(history.at(-1).achievement,80);
   const missing = stands.map((s,index) => index === 1 ? {...s,metrics:s.metrics.map(m => m.key === 'units' ? {...m,actual:null} : m)} : s);
   assert.deepEqual(targetProgressHistory(missing,'HE','full','2026-10-17','units').map(s => s.change),[null,null,null,0]);
-  for (const actual of [NaN,Infinity,-1]) {
+  for (const actual of [NaN,Infinity]) {
     const invalid = stands.map((s,index) => index === 1 ? {...s,metrics:s.metrics.map(m => m.key === 'units' ? {...m,actual} : m)} : s);
     assert.deepEqual(targetProgressHistory(invalid,'HE','full','2026-10-17','units').map(s => s.change),[null,null,null,0]);
   }
@@ -114,4 +114,12 @@ test('explicit historical test replay keeps upload date visible and limits snaps
  const replay={...delayed,replayAvailableOn:old.asOf};
  assert.equal(currentTargets([replay],'HE','full','2026-10-12').updatedAt,delayed.updatedAt);
  assert.equal(currentTargets([replay],'HE','full','2026-10-07'),null);
+});
+
+
+test('negative cumulative values retain signed achievements and adjacent changes',()=>{
+ const source=weeklyTargetFixtures('HE').filter(s=>s.month==='2026-10');const actuals=[-5,-2,3,-1];
+ const stands=source.map((s,i)=>({...s,metrics:s.metrics.map(m=>m.key==='units'?{...m,actual:actuals[i],target:10}:m)}));
+ const history=targetProgressHistory(stands,'HE','full','2026-10-17','units');
+ assert.deepEqual(history.map(s=>s.actual),actuals);assert.deepEqual(history.map(s=>s.achievement),[-50,-20,30,-10]);assert.deepEqual(history.map(s=>s.change),[null,3,5,-4]);assert.equal(targetAchievement(-1,10),-10);
 });

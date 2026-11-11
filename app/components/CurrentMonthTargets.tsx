@@ -6,6 +6,8 @@ import { groupMetricBlocks, type DASetting, type SECGroup } from '../lib/groups'
 import { monthName, publicationDate } from '../lib/monthlyClosing';
 import { currentTargets, targetAchievement, targetProgressHistory, type WeeklyTargetSnapshot } from '../lib/weeklyTargets';
 
+import { chartRatio, signedChartAxis } from '../lib/signedChart';
+
 const number = (n: number) => n.toLocaleString('de-AT', { maximumFractionDigits: 1 });
 const signedChange = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '±') + number(Math.abs(n));
 const changeDirection = (n: number) => n > 0 ? 'up' : n < 0 ? 'down' : 'unchanged';
@@ -74,9 +76,9 @@ export function CurrentMonthTargets({ groupId, setting, calendarDay, snapshots, 
 }
 
 function WeeklyTargetChart({ history, label }: { history: ReturnType<typeof targetProgressHistory>; label: string }) {
-  const ceiling = Math.max(100, ...history.map(stand => stand.achievement ?? 0));
-  const points = history.map((stand, index) => ({ ...stand, x: history.length === 1 ? 310 : 40 + index * 540 / (history.length - 1), y: stand.achievement === null ? null : 160 - stand.achievement / ceiling * 130 }));
+  const axis = signedChartAxis(history.map(stand => stand.achievement));
+  const points = history.map((stand, index) => ({ ...stand, x: history.length === 1 ? 310 : 40 + index * 540 / (history.length - 1), y: stand.achievement === null ? null : 160 - chartRatio(stand.achievement, axis) * 130 }));
   const path = points.map((point, index) => point.y === null ? '' : ((points[index - 1]?.y ?? null) === null ? 'M' : 'L') + point.x + ',' + point.y).join(' ');
-  const targetY = 160 - 100 / ceiling * 130;
-  return <figure className="weekly-target-chart" aria-label={'Wochenverlauf ' + label}><figcaption>Zielerreichung im laufenden Monat</figcaption><svg viewBox="0 0 620 205" aria-hidden="true"><line x1="40" x2="580" y1={targetY} y2={targetY} className="weekly-target-reference"/><text x="40" y={targetY - 12} className="weekly-target-reference-label">100% Ziel</text><path d={path} className="weekly-target-line"/>{points.map((point,index) => <g key={point.asOf}>{point.y !== null && <><circle cx={point.x} cy={point.y} r="6" className="weekly-target-dot"/><text x={point.x} y={point.y - 14} textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'} className="weekly-target-chart-value" data-threshold-reached={point.achievement! >= 90}>{number(point.achievement!)}%</text></>}<text x={point.x} y="193" textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'} className="weekly-target-date">{publicationDate(point.asOf).slice(0, 6)}</text></g>)}</svg></figure>;
+  const targetY = 160 - chartRatio(100, axis) * 130;
+  return <figure className="weekly-target-chart" aria-label={'Wochenverlauf ' + label}><figcaption>Zielerreichung im laufenden Monat</figcaption><svg viewBox="0 0 620 205" aria-hidden="true">{axis.min < 0 && <line x1="40" x2="580" y1={160-chartRatio(0,axis)*130} y2={160-chartRatio(0,axis)*130} className="weekly-target-reference"/>}<line x1="40" x2="580" y1={targetY} y2={targetY} className="weekly-target-reference"/><text x="40" y={targetY - 12} className="weekly-target-reference-label">100% Ziel</text><path d={path} className="weekly-target-line"/>{points.map((point,index) => <g key={point.asOf}>{point.y !== null && <><circle cx={point.x} cy={point.y} r="6" className="weekly-target-dot"/><text x={point.x} y={point.y - 14} textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'} className="weekly-target-chart-value" data-threshold-reached={point.achievement! >= 90}>{number(point.achievement!)}%</text></>}<text x={point.x} y="193" textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'} className="weekly-target-date">{publicationDate(point.asOf).slice(0, 6)}</text></g>)}</svg></figure>;
 }

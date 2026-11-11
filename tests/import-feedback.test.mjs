@@ -69,3 +69,8 @@ test('a changed closing configuration exposes new fields empty and preserves ear
  extra.column='ZZ';const reverted=closingFeedbackMappings({sheet:source,metrics,mappings:updated},'HE');assert.equal(reverted.find(m=>m.field===extra.field).column,'ZZ');
  assert.equal(original.some(m=>m.field===extra.field),false); // existing input is not mutated
 });
+
+
+test('number repair guidance explicitly permits negative actual values',()=>{
+ const issue=explainImportIssue({row:113,column:'T',message:'Soundbar / AV: Istwert nicht lesbar.'},ctx);assert.match(issue.solution,/Negative Istwerte sind erlaubt/);assert.doesNotMatch(issue.solution,/Negative Istwerte sind nicht erlaubt/);
+});

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { chartRatio, signedChartAxis } from '../lib/signedChart';
 import { Info } from 'lucide-react';
 import type { DashboardFilters } from '../lib/dashboard';
 import type { SECGroup } from '../lib/groups';
@@ -16,7 +17,7 @@ export function PerformanceChart({ group, filters, reports = [], onOpenRules, ru
  const ending = Number(filters.month.slice(5));
  const start = Math.max(1,ending-5);
  const rows = Array.from({length:ending-start+1},(_,i) => {const month = filters.month.slice(0,4)+'-'+String(start+i).padStart(2,'0'); return {month, report:active.find(r=>r.month===month)};});
- const maximum = Math.max(110,...active.flatMap(r=>[r.sellout??0,r.softbonus??0]));
+ const axis = signedChartAxis(active.flatMap(r=>[r.sellout,r.softbonus]),110);
  const updates = [...reports].filter(r=>r.month<=filters.month).sort((a,b)=>b.publishedAt.localeCompare(a.publishedAt)).slice(0,12);
  useEffect(()=>{
   const chart=chartRef.current;
@@ -25,14 +26,14 @@ export function PerformanceChart({ group, filters, reports = [], onOpenRules, ru
   const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setRevealed(true);observer.disconnect();}},{root:chart.closest('.fieldforce-dashboard')?null:chart.closest('.phone-scroll-region'),threshold:.2});
   observer.observe(chart);return()=>observer.disconnect();
  },[revealed]);
- const style=(n:number,delay:number)=>({height:(n/maximum*100)+'%','--bar-delay':delay+'ms'} as CSSProperties);
+ const style=(n:number,delay:number)=>({height:(Math.abs(n)/axis.span*100)+'%',...(axis.min<0?{bottom:chartRatio(Math.min(n,0),axis)*100+'%',minHeight:0}:{}),'--bar-delay':delay+'ms'} as CSSProperties);
  return <section ref={chartRef} className={'performance-chart '+(revealed?'is-revealed ':'')+className} id={group.id+'-section-trend'} aria-label={isST?'Qualitativer Monatsverlauf':'Sell-out und Softbonus Monatsverlauf'}>
   <header className="performance-chart-header"><div><h2>{isST?'Qualitativer Verlauf':'Sell-out & Softbonus'}</h2><p>{view==='months'?'Veröffentlichte Monatsabschlüsse · '+filters.month.slice(0,4):'Veröffentlichungen und Korrekturen'}</p></div>
    {!isST&&onOpenRules&&<button className="performance-chart-info" type="button" aria-label="Informationen zu Sell-out, Softbonus und Punkten öffnen" aria-haspopup="dialog" aria-expanded={rulesOpen} onClick={onOpenRules}><Info size={28} strokeWidth={1.55}/></button>}
 
   </header>
   {view==='months'?<>
-   {!active.length?<div className="performance-no-data">Noch kein veröffentlichter Monatsabschluss.</div>:<div className="performance-bar-plot"><div className="performance-guide" style={{bottom:'var(--performance-guide-bottom, '+(100/maximum*100)+'%)','--performance-reference-ratio':100/maximum} as CSSProperties}><span>100%</span></div><div className="performance-bars">{rows.map(({month,report},index)=><div className={'performance-bar-group'+(month===filters.month?' is-current':'')} key={month}>
+   {!active.length?<div className="performance-no-data">Noch kein veröffentlichter Monatsabschluss.</div>:<div className="performance-bar-plot"><div className="performance-guide" style={{bottom:'var(--performance-guide-bottom, '+(chartRatio(100,axis)*100)+'%)','--performance-reference-ratio':chartRatio(100,axis)} as CSSProperties}><span>100%</span></div>{axis.min<0&&<div className="performance-guide" style={{bottom:`var(--performance-guide-bottom, ${chartRatio(0,axis)*100}%)`,'--performance-reference-ratio':chartRatio(0,axis)} as CSSProperties}><span>0%</span></div>}<div className="performance-bars">{rows.map(({month,report},index)=><div className={'performance-bar-group'+(month===filters.month?' is-current':'')} key={month}>
     <div className="performance-pair">{!report?<span className="history-missing">—</span>:<>
      {!isST&&filters.series!=='softbonus'&&(report.sellout===null?<span className="history-missing">—</span>:<div className="performance-bar is-blue" style={style(report.sellout,80+index*55)} title={monthName(month)+': Sell-out '+report.sellout+'%'}><i className="performance-bar-fill"/><strong>{displayPercent(report.sellout)}</strong></div>)}
      {filters.series!=='sellout'&&(report.softbonus===null?<span className="history-missing">—</span>:<div className="performance-bar is-green" style={style(report.softbonus,115+index*55)} title={monthName(month)+': Softbonus '+report.softbonus+'%'}><i className="performance-bar-fill"/><strong>{displayPercent(report.softbonus)}</strong></div>)}

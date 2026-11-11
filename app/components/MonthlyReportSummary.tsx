@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Check, FileText } from 'lucide-react';
 import { compareClosing, monthName, publicationDate, type MonthlyReport } from '../lib/monthlyClosing';
 import { TIER_LABELS } from '../lib/groups';
 import { SoftbonusOverviewCard } from './SoftbonusOverview';
@@ -9,7 +9,7 @@ export function MonthlyReportSummary({ report, reports, unread, latestUnread, co
   const isST = report.groupId === 'ST';
   return <section className={`configured-card monthly-report-summary${isST ? ' is-qualitative' : ''}`} data-report={report.publicationId} aria-label={`Monatsergebnis ${monthName(report.month)}`}>
     <div className={`publication-context${unread || latestUnread ? ' is-new' : ''}`}>
-      <span>{unread || latestUnread ? <Sparkles size={23} strokeWidth={1.5} /> : <Check size={23} strokeWidth={1.5} />}
+      <span>{unread || latestUnread ? <FileText size={23} strokeWidth={1.5} /> : <Check size={23} strokeWidth={1.5} />}
         {latestUnread ? `${monthName(latestUnread.month)} ist neu verfügbar.` : unread ? report.revision > 1 ? `${monthName(report.month)} wurde aktualisiert.` : `Neu: ${monthName(report.month)} ist verfügbar.` : `Veröffentlicht am ${publicationDate(report.publishedAt)}`}</span>
       <button type="button" onClick={latestUnread ? onLatest : onDetails}>{latestUnread ? 'Anzeigen' : 'Monatsdetails'}<ArrowUpRight size={23} /></button>
     </div>

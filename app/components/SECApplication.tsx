@@ -10,6 +10,7 @@ import { PhoneSelect } from './PhoneSelect';
 import type { MonthlyReport } from '../lib/monthlyClosing';
 import { RealAdminWorkbench } from './RealAdminWorkbench';
 import { FieldforceAccountMenu } from './FieldforceAccountMenu';
+import { SupervisorDashboard } from './SupervisorDashboard';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { PersonalPrivacy } from './SECPrivacyPanels';
 import { SECMFA } from './SECMFA';
@@ -68,13 +69,14 @@ export function SECApplication({view='dashboard'}:{view?:'dashboard'|'admin'}){
  if(pathname!==roleRoute(profile.role))return <div className="sec-access-shell"><p role="status">Dein Dashboard wird geöffnet…</p></div>;
  if(mfaRequired)return <SECMFA required onDone={()=>setMfaRequired(false)} onCancel={()=>void logout()}/>;
  if(profile.must_change_password)return <PasswordForm session={session} profile={profile} onDone={logout}/>;
- return <div className={'sec-application'+(profile.role==='sec'?' is-fieldforce':'')} data-view={view}>
-  <header className="sec-account-bar"><Link href={roleRoute(profile.role)}>Samsung <strong>SEC</strong></Link>{profile.role==='sec'?<FieldforceAccountMenu name={profile.display_name||profile.email} onAccount={()=>setAccountView(v=>v==='none'?'privacy':'none')} onLogout={()=>void logout()}/>:<><span>{profile.display_name||profile.email}</span><a href="/datenschutz">Datenschutz</a><button onClick={()=>setAccountView(v=>v==='none'?'privacy':'none')}>Mein Konto</button><button onClick={()=>void logout()}><LogOut size={16}/>Abmelden</button></>}</header>
+ const fieldforce=profile.role==='sec'||profile.role==='supervisor';
+ return <div className={'sec-application'+(fieldforce?' is-fieldforce':'')} data-view={view}>
+  <header className="sec-account-bar"><Link href={roleRoute(profile.role)}>Samsung <strong>SEC</strong></Link>{fieldforce?<FieldforceAccountMenu name={profile.display_name||profile.email} onAccount={()=>setAccountView(v=>v==='none'?'privacy':'none')} onLogout={()=>void logout()}/>:<><span>{profile.display_name||profile.email}</span><a href="/datenschutz">Datenschutz</a><button onClick={()=>setAccountView(v=>v==='none'?'privacy':'none')}>Mein Konto</button><button onClick={()=>void logout()}><LogOut size={16}/>Abmelden</button></>}</header>
   {profile.notice_version!==noticeVersion&&<div className="sec-notice-banner"><span>Aktualisierte <a href="/datenschutz">Datenschutzinformation</a> · {noticeVersion}</span><button onClick={()=>void acknowledgeNotice()}>Als gelesen bestätigen</button></div>}
   {error&&<p className="sec-refresh-error" role="status">{error}</p>}
   {accountView!=='none'&&<nav className="sec-account-menu" aria-label="Mein Konto"><button onClick={()=>setAccountView('none')}>Zum Dashboard</button><button onClick={()=>setAccountView('privacy')}>Meine Daten</button><button onClick={()=>setAccountView('password')}>Passwort ändern</button><button onClick={()=>setAccountView('mfa')}>Authenticator</button></nav>}
-  {accountView==='privacy'?<PersonalPrivacy request={request}/>:accountView==='password'?<PasswordForm session={session} profile={profile} onDone={logout}/>:accountView==='mfa'?<SECMFA onDone={()=>setAccountView('none')} onCancel={()=>setAccountView('none')}/>:profile.role!=='sec'?<RealAdminWorkbench key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onPasswordChange={()=>setAdminPasswordOpen(true)}/>:<PersonalDashboard key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onInvalidSession={logout}/>}
-  {profile.role!=='sec'&&adminPasswordOpen&&<AdminPasswordDialog session={session} onClose={()=>setAdminPasswordOpen(false)} onSaved={adminPasswordSaved}/>}
+  {accountView==='privacy'?<PersonalPrivacy request={request}/>:accountView==='password'?<PasswordForm session={session} profile={profile} onDone={logout}/>:accountView==='mfa'?<SECMFA onDone={()=>setAccountView('none')} onCancel={()=>setAccountView('none')}/>:profile.role==='supervisor'?<SupervisorDashboard key={profile.user_id} session={session} onInvalidSession={logout}/>:!fieldforce?<RealAdminWorkbench key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onPasswordChange={()=>setAdminPasswordOpen(true)}/>:<PersonalDashboard key={[profile.user_id,profile.role,profile.department_ids.join(','),profile.primary_department,profile.setting,profile.person_id].join('|')} session={session} profile={profile} onInvalidSession={logout}/>}
+  {!fieldforce&&adminPasswordOpen&&<AdminPasswordDialog session={session} onClose={()=>setAdminPasswordOpen(false)} onSaved={adminPasswordSaved}/>}
  </div>;
 }
 function AccessForm({onSignedIn,notice,successNotice}:{onSignedIn:(session:Session)=>void;notice:string;successNotice:string}){

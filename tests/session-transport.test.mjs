@@ -7,6 +7,7 @@ const denied=code=>new Response(JSON.stringify({code}),{status:401,headers:{'con
 
 test('roles have one canonical destination regardless of the login URL',()=>{
  assert.equal(roleRoute('sec'),'/');
+ assert.equal(roleRoute('supervisor'),'/');
  assert.equal(roleRoute('app_admin'),'/admin');
  assert.equal(roleRoute('department_admin'),'/admin');
 });

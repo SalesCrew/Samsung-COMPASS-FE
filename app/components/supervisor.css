@@ -1,0 +1,39 @@
+.supervisor-switcher { position: relative; z-index: 75; margin: 0 20px; padding-top: 12px; }
+.supervisor-switcher-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 7px; color: #667792; font-size: 11px; line-height: 1.5; }
+.supervisor-switcher-caption > span:first-child { color: #315b94; font-weight: 550; }
+.supervisor-tools, .supervisor-tools > span { display: flex; align-items: center; gap: 5px; }
+.supervisor-tools { gap: 10px; }
+.supervisor-tools button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #667792; cursor: pointer; }
+.supervisor-tools button:hover { background: #eaf1fb; }
+.supervisor-tools button:disabled { opacity: .45; cursor: wait; }
+.supervisor-tools button:focus-visible { outline: 2px solid #0651bb; outline-offset: 2px; }
+.supervisor-select { position: relative; min-width: 0; }
+.supervisor-select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 58px; padding: 11px 13px; border: 1px solid #dfe7f2; border-radius: 12px; background: #fff; color: #12233d; text-align: left; font: inherit; cursor: pointer; }
+.supervisor-select-trigger > span, .supervisor-option > span { min-width: 0; }
+.supervisor-select-trigger strong, .supervisor-option strong { display: block; font-size: 14px; font-weight: 550; line-height: 1.4; overflow-wrap: anywhere; }
+.supervisor-select-trigger small, .supervisor-option small { display: block; margin-top: 3px; color: #667792; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.supervisor-select-trigger svg, .supervisor-option svg { flex: none; color: #2458a0; }
+.supervisor-select-trigger:hover, .supervisor-select-trigger[aria-expanded=true] { background: #fafcff; }
+.supervisor-select-trigger:focus { outline: none; box-shadow: none; }
+.supervisor-select-trigger:focus-visible { background: #eef4fc; }
+.supervisor-select-trigger:disabled { cursor: default; }
+.supervisor-select-menu { position: absolute; top: calc(100% + 6px); left: 0; right: 0; display: flex; flex-direction: column; max-height: min(55dvh, 420px); border: 1px solid #dfe7f2; border-radius: 13px; background: #fff; box-shadow: 0 12px 32px #122e5017; overflow: hidden; }
+.supervisor-search { display: flex; align-items: center; flex: none; gap: 9px; margin: 7px; padding: 0 10px; min-height: 36px; border-radius: 7px; background: #f3f6fa; color: #7a8aa1; }
+.supervisor-search input { width: 100%; min-width: 0; height: 36px; padding: 0; border: 0; outline: none; box-shadow: none; background: transparent; color: #12233d; font: inherit; font-size: 16px; }
+.supervisor-search input::placeholder { color: #78879c; }
+.supervisor-options { overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 6px; scrollbar-width: none; }
+.supervisor-options::-webkit-scrollbar { display: none; }
+.supervisor-group-label { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; gap: 12px; padding: 10px 8px 6px; background: #fff; color: #748299; font-size: 10px; font-weight: 550; line-height: 1.5; }
+.supervisor-group-label span { color: #8e9aac; font-variant-numeric: tabular-nums; }
+.supervisor-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 9px 10px; border-radius: 7px; cursor: pointer; }
+.supervisor-option.is-active { background: #f1f6fd; }
+.supervisor-option[aria-selected=true] strong { color: #0651bb; }
+.supervisor-no-results { margin: 0; padding: 20px 12px; color: #667792; font-size: 13px; text-align: center; }
+.supervisor-message { margin: 20px; color: #667792; font-size: 13px; line-height: 1.5; }
+.supervisor-message[role=alert] { color: #a74321; }
+.supervisor-message button { padding: 5px 0; border: 0; background: none; color: #0651bb; cursor: pointer; font: inherit; }
+.supervisor-empty { padding: 24px 20px; color: #667792; }
+.supervisor-empty h1 { margin: 0 0 8px; color: #12233d; font-size: 19px; }
+.supervisor-empty p { margin: 0; font-size: 13px; line-height: 1.6; }
+.supervisor-dashboard .fieldforce-heading { padding-top: 14px; }
+@media (max-width: 359px) { .supervisor-switcher { margin-inline: 16px; } }

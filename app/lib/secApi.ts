@@ -6,7 +6,7 @@ import {groupProjectAssessment} from './projectAssessment';
 import type { MonthlyReport, PointHistoryEntry, PremiumHistoryEntry } from './monthlyClosing';
 import type { WeeklyTargetSnapshot } from './weeklyTargets';
 
-export type SECAccount={user_id:string;email:string;display_name:string;role:'app_admin'|'department_admin'|'sec';department_ids:SECGroup['id'][];person_id:string|null;primary_department:SECGroup['id']|null;setting:DASetting;active:boolean;must_change_password:boolean;is_test:boolean;notice_version:string|null};
+export type SECAccount={user_id:string;email:string;display_name:string;role:'app_admin'|'department_admin'|'sec'|'supervisor';department_ids:SECGroup['id'][];person_id:string|null;primary_department:SECGroup['id']|null;setting:DASetting;active:boolean;must_change_password:boolean;is_test:boolean;notice_version:string|null};
 export type PublishedRow={id:string;person_id:string;assignment_id:string;department_id:SECGroup['id'];month:string;revision:number;published_at:string;import_id:string;payload:MonthlyReport & WeeklyTargetSnapshot};
 export type Assignment={id:string;person_id:string;department_id:SECGroup['id'];setting:DASetting;market:string};
 export type Person={id:string;external_id:string;name:string};
@@ -14,7 +14,8 @@ export type ConfigRow={id:string;department_id:SECGroup['id'];setting:DASetting;
 export type ImportRow={id:string;department_id:SECGroup['id'];month:string;phase:import('./admin').ImportPhase;as_of:string;filename:string;sheet:string;mapping:import('./admin').SourceColumnMapping[];status:'draft'|'published'|'rejected';row_count:number;created_at:string;published_at:string|null};
 export type AdminData={reports:PublishedRow[];weekly:PublishedRow[];imports:ImportRow[];configurations:ConfigRow[];people:Person[];assignments:Assignment[]};
 export type OwnRanking={pool:number;rank:number|null;outsideTopTen:boolean;reason?:'incomplete-history'|'not-enough-participants'|'unavailable'};
-export type DashboardData={presentation?:boolean;profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];premiumHistory?:PremiumHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
+export type SupervisorPerson={assignment_id:string;person_id:string;name:string;department_id:SECGroup['id'];setting:DASetting;market:string};
+export type DashboardData={presentation?:boolean;readOnly?:boolean;subject?:{person_id:string;display_name:string;primary_department:SECGroup['id'];setting:DASetting}|null;profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];premiumHistory?:PremiumHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
 export class SECAPIError extends Error{status:number;code:string;constructor(message:string,status:number,code:string){super(message);this.status=status;this.code=code;}}
 let browserAuth:ReturnType<typeof createClient>|undefined;
 export function secAuth(){

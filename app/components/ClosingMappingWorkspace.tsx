@@ -1,18 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, CircleAlert, RotateCcw, Search } from 'lucide-react';
 import type { AdminMetric, SheetPreview, SourceColumnMapping } from '../lib/admin';
 import { closingDefinitions, closingMappings, mappingConflicts, type ClosingResult } from '../lib/closingImport';
 import type { SECGroup } from '../lib/groups';
 import { AdminSelect } from './AdminSelect';
 import './closingImport.css';
+import { explainImportIssue, importFieldId, type ImportProblem } from '../lib/importFeedback';
+import { ImportFieldFeedback, ImportProblemList } from './ImportFeedback';
 
-export function ClosingMappingWorkspace({ sheet, group, metrics, mappings, onChange }: {
-  sheet: SheetPreview; group: SECGroup['id']; metrics: AdminMetric[]; mappings: SourceColumnMapping[]; onChange: (next: SourceColumnMapping[]) => void;
+export function ClosingMappingWorkspace({ sheet, group, metrics, mappings, problems = [], onChange }: {
+  sheet: SheetPreview; group: SECGroup['id']; metrics: AdminMetric[]; mappings: SourceColumnMapping[]; problems?: ImportProblem[]; onChange: (next: SourceColumnMapping[]) => void;
 }) {
   const [query, setQuery] = useState('');
   const [section, setSection] = useState('all');
+  useEffect(() => { const reveal = () => { setQuery(''); setSection('all'); }; window.addEventListener('sec-import-reveal', reveal); return () => window.removeEventListener('sec-import-reveal', reveal); }, []);
   const definitions = closingDefinitions(group, metrics);
   const sections = [...new Set(mappings.map(item => item.sourceSection).filter((section): section is string => Boolean(section)))];
   const conflicts = mappingConflicts(mappings);
@@ -44,12 +47,13 @@ export function ClosingMappingWorkspace({ sheet, group, metrics, mappings, onCha
           const conflict = enabled && conflicts.has(item.column);
           const missing = enabled && !item.column;
           const changed = current && current.label !== item.sourceLabel;
-          return <div role="row" key={item.id} data-mapping-id={item.id} className={`closing-map-row${conflict || missing ? ' has-error' : ''}${enabled ? '' : ' is-disabled'}`}>
+          return <div role="row" key={item.id} data-mapping-id={item.id} id={importFieldId(item.field)} tabIndex={-1} className={`closing-map-row${conflict || missing ? ' has-error' : ''}${enabled ? '' : ' is-disabled'}`}>
             <div className="closing-field"><strong>{custom ? current?.label || 'Excel-Feld wählen' : item.sourceLabel}</strong>{definition.required && <small>Pflichtfeld</small>}{!custom && enabled && changed && <small>Excel {item.column}: {current.label || 'ohne Überschrift'}</small>}{conflict && <span>Spalte {item.column} mehrfach verwendet</span>}{missing && <span>Quellspalte fehlt</span>}</div>
-            <AdminSelect compact searchable ariaLabel={`Quellspalte für ${item.sourceLabel}`} value={item.column} disabled={!enabled} onChange={column => patch(item.id!, { column, sourceSection: custom ? 'Aktive Konfiguration' : sheet.columns.find(source => source.key === column)?.section || definition.section })} options={options} />
+            <AdminSelect compact searchable invalid={problems.some(p => p.target === item.field)} describedBy={problems.some(p => p.target === item.field) ? importFieldId(item.field) + '-help' : undefined} ariaLabel={`Quellspalte für ${item.sourceLabel}`} value={item.column} disabled={!enabled} onChange={column => patch(item.id!, { column, sourceSection: custom ? 'Aktive Konfiguration' : sheet.columns.find(source => source.key === column)?.section || definition.section })} options={options} />
             <span className="closing-configured-field">{configured ? <>{configured.label}<small>{configured.dataset === 'softbonus' || group === 'ST' ? 'Softbonus' : 'KPI'} · {configured.weight ?? '—'} % Gewicht</small></> : '—'}</span>
             <span className="closing-source-section">{custom ? current?.section || '—' : item.sourceSection}</span>
             <label className="mapping-required"><input type="checkbox" aria-label={`${item.sourceLabel} übernehmen`} checked={enabled} onChange={event => patch(item.id!, { dataset: event.target.checked ? definition.dataset : 'ignore' })} /><i /></label>
+            <ImportFieldFeedback problems={problems} field={item.field} />
           </div>;
         })}
         {!filtered.length && <div className="mapping-empty">Keine passenden Felder.</div>}
@@ -64,7 +68,7 @@ export function ClosingImportPreview({ result, imported = false }: { result: Clo
     <h3>{imported ? <><Check size={16} /> Lokal importiert</> : 'Datenprüfung'}</h3>
     <p><strong>{result.records.length}</strong> Datensätze im gewählten Monat · {result.otherMonths} Zeilen aus anderen Monaten ausgelassen</p>
     {result.specialValues > 0 && <p>{result.specialValues} Sonderwerte („x“ / nicht anwendbar) bleiben erhalten.</p>}
-    {result.issues.length > 0 && <div className="closing-conflict" role="alert"><CircleAlert size={16} /><div><strong>{result.issues.length} Fehler vor dem Import beheben</strong>{result.issues.slice(0, 6).map((issue, index) => <p key={index}>{issue.row ? `Zeile ${issue.row}${issue.column ? ` · ${issue.column}` : ''}: ` : ''}{issue.message}</p>)}{result.issues.length > 6 && <p>Weitere {result.issues.length - 6} Fehler.</p>}</div></div>}
+    {result.issues.length > 0 && <ImportProblemList problems={result.issues.map(issue => explainImportIssue(issue, { mappings: [], metrics: [] }))} />}
     {imported && <p>Die zugeordneten Zellwerte sind für diese Sitzung im Speicher. Nach Neuladen erneut einlesen.</p>}
   </section>;
 }

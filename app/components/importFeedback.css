@@ -1,0 +1,31 @@
+.weekly-mapping { display:grid; gap:22px; min-width:0; }
+.weekly-mapping p { margin:0; }
+.weekly-mapping-section > h3 { margin:0 0 7px; font-size:14px; }
+.weekly-mapping-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 20px; margin-top:16px; }
+.weekly-mapping-field { min-width:0; scroll-margin:24px; }
+.import-field-label { display:flex; flex-wrap:wrap; align-items:baseline; gap:7px; margin-bottom:7px; font-size:12px; font-weight:500; color:var(--ad-ink); }
+.import-field-label small { font-weight:400; font-size:10px; color:var(--ad-muted); }
+.admin-app .import-field-feedback { margin-top:7px; font-size:12px; line-height:1.55; color:var(--ad-red); font-weight:400; overflow-wrap:anywhere; }
+.admin-app .import-field-feedback p { display:grid; gap:3px; margin:0 0 10px; }
+.import-field-feedback span { color:var(--ad-text); }
+.import-field-feedback strong { font-weight:600; }
+.import-field-feedback small,.import-problem-list small { display:block; font-size:11px; }
+.import-problem-list { border-top:1px solid var(--ad-line); margin-top:16px; padding-top:8px; font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+.import-problem-list ol { margin:0; padding-left:19px; }
+.import-problem-list li { padding:8px 0 10px 3px; }
+.import-problem-list li::marker { color:var(--ad-muted); }
+.import-problem-list strong { color:var(--ad-red); font-weight:600; }
+.import-problem-list p { margin:4px 0 7px; color:var(--ad-ink); }
+.import-problem-list summary { cursor:pointer; color:var(--ad-accent); padding:8px 0; }
+.import-next-step { margin:14px 0; font-size:12px; line-height:1.6; color:var(--ad-ink); }
+.import-next-step strong { display:block; margin-bottom:3px; }
+.import-check-status { font-size:12px; line-height:1.6; color:var(--ad-muted); margin-top:14px; }
+.import-inline-source-error { padding-bottom:14px; }
+.closing-map-row .import-field-feedback { grid-column:1 / -1; }
+.closing-map-row .import-field-feedback p { margin-bottom:3px; }
+.admin-identity-row .import-field-feedback { grid-column:2; }
+.admin-app [id^="import-field-"] { scroll-margin:32px; }
+@media(max-width:760px) { .weekly-mapping-fields { grid-template-columns:minmax(0,1fr); } .admin-identity-row .import-field-feedback { grid-column:1; } }
+
+.import-next-step ol { margin:4px 0 0; padding-left:18px; }
+.import-next-step li + li { margin-top:5px; }

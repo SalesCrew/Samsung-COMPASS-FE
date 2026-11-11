@@ -22,6 +22,8 @@ type AdminSelectProps = {
   compact?: boolean;
   searchable?: boolean;
   className?: string;
+  invalid?: boolean;
+  describedBy?: string;
 };
 
 type PopoverPosition = { left: number; top: number; width: number; maxHeight: number; placement: 'top' | 'bottom' };
@@ -37,6 +39,8 @@ export function AdminSelect({
   compact = false,
   searchable = false,
   className = '',
+  invalid,
+  describedBy,
 }: AdminSelectProps) {
   const reactId = useId();
   const listboxId = `admin-select-${reactId.replace(/:/g, '')}`;
@@ -198,6 +202,8 @@ export function AdminSelect({
       className={`admin-select-trigger${compact ? ' is-compact' : ''}${className ? ` ${className}` : ''}`}
       role="combobox"
       aria-label={ariaLabel}
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
       aria-controls={listboxId}
       aria-expanded={open}
       aria-haspopup="listbox"

@@ -35,10 +35,14 @@ import { AdminMonthPicker, AdminDatePicker } from './AdminTemporalPicker';
 import type { DashboardScope } from '../lib/adminDashboard';
 import type { LiveDashboardSource } from '../lib/adminLiveData';
 import './admin.css';
+import './importFeedback.css';
+import { WeeklyMappingWorkspace } from './WeeklyMappingWorkspace';
+import { ImportFieldFeedback, ImportProblemList } from './ImportFeedback';
+import { contextProblems, explainImportFailure, explainImportIssue, importFieldId, mappingProblems, uniqueProblems, type ImportIssue } from '../lib/importFeedback';
 
 type AdminTab = 'overview' | 'analysis' | 'import' | 'configuration' | 'history' | 'accounts' | 'privacy';
 export type AdminRemote={source:LiveDashboardSource;configs:ConfigVersion[];imports:ImportVersion[];departments:SECGroup['id'][];accounts:ReactNode;privacy:ReactNode;refresh:()=>Promise<void>;request:<T>(path:string,body?:unknown,options?:RequestInit)=>Promise<T>};
-type RemoteValidation={issues:{row:number;column?:string;field?:string;message:string}[];count:number;otherMonths:number;specialValues:number;mappings:SourceColumnMapping[];identityMatches?:ImportIdentityMatch[];people?:ImportPersonOption[]};
+type RemoteValidation={issues:ImportIssue[];count:number;otherMonths:number;specialValues:number;mappings:SourceColumnMapping[];identityMatches?:ImportIdentityMatch[];people?:ImportPersonOption[]};
 const CONFIG_KEY = 'sec-admin-config-v1';
 const IMPORT_KEY = 'sec-admin-import-v2';
 const INITIAL_DEMO_SOURCE = { sheet: closingTemplate('HE'), mappings: closingMappings(closingTemplate('HE'), 'HE') };
@@ -100,9 +104,9 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const sourceName = demoSource ? `DEMO_${importGroup}_${importMonth}.xlsx` : file?.name;
   const sameMonthImports = imports.filter(item => item.group === importGroup && item.month === importMonth && item.status === 'released');
   const importMetrics = useMemo(() => {
-    const latest = configs.filter(item => item.group === importGroup && (importGroup !== 'DA' || item.setting === importSetting)).at(-1);
+    const latest = configs.filter(item => item.group === importGroup && (importGroup !== 'DA' || item.setting === importSetting) && (!remote || item.effective.slice(0,10) <= asOf)).sort((a,b) => a.effective.localeCompare(b.effective) || a.saved.localeCompare(b.saved)).at(-1);
     return latest?.metrics ?? initialMetrics(importGroup, importSetting);
-  }, [configs, importGroup, importSetting]);
+  }, [configs, importGroup, importSetting, remote, asOf]);
   const closingPreview = useMemo(() => !remote && !demoSource && closingMode && selectedSheet ? prepareClosing(selectedSheet, importGroup, columnMappings, importMonth, importMetrics) : undefined,
     [remote, demoSource, closingMode, selectedSheet, importGroup, columnMappings, importMonth, importMetrics]);
   const closingSignature = closingPreview ? JSON.stringify([importGroup, importMonth, closingPreview.records]) : '';
@@ -134,17 +138,18 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
     if (!next) return;
     const request = ++fileRead.current;
     setReadingFile(true);
+    setRemoteCheck(null); setCheckedSignature(''); setPreviewId(''); setStaged('');
     setFile(next); setDemoSource(false); setSheets([]); setSheetName(''); setError(''); setNotice(''); setColumnMappings([]);
     try {
       if(remote){
         const result=await remote.request<{previewId:string;detectedGroup:SECGroup['id']|null;preferredSheet:string;sourceMonths:string[];sourceAsOf:string|null;sheets:SheetPreview[]}>('/imports/preview',undefined,{method:'POST',headers:{'Content-Type':'application/octet-stream','X-File-Name':encodeURIComponent(next.name)},body:next});
         if(request!==fileRead.current)return;
-        const nextGroup=result.detectedGroup??remote.departments[0];const chosen=result.sheets.find(v=>v.name===result.preferredSheet)!;
+        const nextGroup=result.detectedGroup??remote.departments[0];const nextSetting=nextGroup==='DA'?importSetting:'full';const chosen=result.sheets.find(v=>v.name===result.preferredSheet)!;
         const month=result.sourceMonths.at(-1)??new Date().toISOString().slice(0,7);const date=result.sourceAsOf??month+'-'+new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate();
         const nextPhase=isPivotSheet(chosen.name)?'MONTH_FINALIZATION':'WEEKLY_PROGRESS';
-        setPreviewId(result.previewId);setPersonMatches({});setSheets(result.sheets);setSheetName(chosen.name);setImportGroup(nextGroup);setImportMonth(month);setAsOf(date);setPhase(nextPhase);setSubtype(nextPhase==='MONTH_FINALIZATION'?'Monthly Closing':'Progress-Tracker');
-        const checked=await remote.request<RemoteValidation>('/imports/'+result.previewId+'/validate',{group:nextGroup,setting:importSetting,month,asOf:date,phase:nextPhase,sheet:chosen.name});
-        if(request!==fileRead.current)return;setColumnMappings(checked.mappings);setRemoteCheck(checked);setStaged('');return;
+        setPreviewId(result.previewId);setPersonMatches({});setSheets(result.sheets);setSheetName(chosen.name);setImportGroup(nextGroup);setImportSetting(nextSetting);setImportMonth(month);setAsOf(date);setPhase(nextPhase);setSubtype(nextPhase==='MONTH_FINALIZATION'?'Monthly Closing':'Progress-Tracker');
+        const checked=await remote.request<RemoteValidation>('/imports/'+result.previewId+'/validate',{group:nextGroup,setting:nextSetting,month,asOf:date,phase:nextPhase,sheet:chosen.name});
+        if(request!==fileRead.current)return;setColumnMappings(checked.mappings);setRemoteCheck(checked);setCheckedSignature(JSON.stringify([result.previewId,nextGroup,nextSetting,month,date,nextPhase,chosen.name,checked.mappings,{}]));setStaged('');return;
       }
       const parsed = await inspectWorkbook(next);
       if (request !== fileRead.current) return;
@@ -176,6 +181,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
     const nextDatasets = defaultDatasets(nextPhase, nextSubtype, nextGroup);
     setDatasets(nextDatasets);
     setSplitCategories(defaultSplitCategories(nextGroup));
+    if (remote && selectedSheet && nextGroup === importGroup && nextSetting === importSetting) { setError(''); return; }
     if (demoSource) {
       const template = closingTemplate(nextGroup);
       const source = nextPhase === 'MONTH_FINALIZATION' && nextSubtype === 'Monthly Closing' ? { sheet: template, mappings: closingMappings(template, nextGroup, configured) } : meetingWorkbook(nextGroup, nextSetting, nextPhase);
@@ -225,9 +231,45 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const remoteSignature=JSON.stringify([previewId,importGroup,importSetting,importMonth,asOf,phase,sheetName,columnMappings,personMatches]);
   const[checkedSignature,setCheckedSignature]=useState('');
   function remoteContext(){return{group:importGroup,setting:importSetting,month:importMonth,asOf,phase,sheet:sheetName,mappings:columnMappings,personMatches};}
-  async function checkRemote(){if(!remote||!previewId)return;setBusy(true);setError('');setStaged('');try{const check=await remote.request<RemoteValidation>('/imports/'+previewId+'/validate',remoteContext());setRemoteCheck(check);setCheckedSignature(remoteSignature);setNotice(`${check.count} passende Datensätze · ${check.otherMonths} andere Monate · ${check.issues.length} Fehler.`);}catch(e){setError(e instanceof Error?e.message:'Prüfung fehlgeschlagen.');}finally{setBusy(false);}}
-  async function releaseRemote(){if(!remote||!previewId)return;setBusy(true);setError('');try{const check=await remote.request<RemoteValidation>('/imports/'+previewId+'/validate',remoteContext());setRemoteCheck(check);setCheckedSignature(remoteSignature);if(check.issues.length||!check.count)throw new Error('Datenfehler vor der Veröffentlichung beheben.');const result=await remote.request<{import:{id:string}}>('/imports/'+previewId+'/stage',remoteContext());setStaged(result.import.id);await remote.refresh();setNotice(`${check.count} Datensätze als Entwurf gespeichert. Veröffentlichung separat bestätigen.`);}catch(e){setError(e instanceof Error?e.message:'Import fehlgeschlagen.');}finally{setBusy(false);}}
-  async function publishRemote(){if(!remote||!staged||checkedSignature!==remoteSignature)return;setBusy(true);setError('');try{await remote.request('/imports/'+staged+'/publish',{});await remote.refresh();setStaged('');setNotice('Veröffentlicht. Der persönliche Datenstand wird automatisch aktualisiert.');}catch(e){setError(e instanceof Error?e.message:'Veröffentlichung fehlgeschlagen.');}finally{setBusy(false);}}
+  const currentCheck = remoteCheck && checkedSignature === remoteSignature ? remoteCheck : null;
+  const feedbackContext = { sheet: selectedSheet, mappings: columnMappings, metrics: importMetrics };
+  const sourceIsClosing = Boolean(selectedSheet && isPivotSheet(selectedSheet.name));
+  const localMappingProblems = selectedSheet && (remote || closingMode) ? mappingProblems(feedbackContext, importGroup, sourceIsClosing) : [];
+  const validationProblems = uniqueProblems([
+    ...localMappingProblems,
+    ...(remote && selectedSheet ? contextProblems(importMonth, asOf, phase, selectedSheet) : []),
+    ...(currentCheck?.issues ?? closingPreview?.issues ?? []).filter(issue => !(localMappingProblems.length && issue.row === 0 && /Pflichtzuordnung|Pflichtfelder|Spaltenkonflikt|Quellspalte|Spalte wählen|Importziel/.test(issue.message))).map(issue => explainImportIssue(issue, feedbackContext)),
+    ...(currentCheck && !currentCheck.count && !currentCheck.issues.length ? [{ title: 'Für diesen Monat wurden keine Datensätze gefunden.', solution: `Prüfe Berichtsmonat und Arbeitsblatt. ${currentCheck.otherMonths ? `${currentCheck.otherMonths} Zeilen gehören zu anderen Monaten. ` : ''}Enthält die Datei nur Überschriften, ergänze zuerst die Daten in Excel und wähle die Datei erneut aus.`, target: 'month' }] : []),
+  ]);
+  const importProblems = uniqueProblems([...validationProblems, ...(remote && error ? [explainImportFailure(error)] : [])]);
+  const readyToStage = Boolean(currentCheck && currentCheck.count > 0 && !importProblems.length);
+  const nextSteps = !selectedSheet ? ['Wähle oben deine Excel-Datei aus.'] : importProblems.length ? ['Behebe die Hinweise unter den markierten Feldern.', 'Klicke danach auf „Daten prüfen“.'] : !currentCheck ? ['Die Auswahl wurde geändert. Klicke auf „Daten prüfen“, um den aktuellen Stand zu prüfen.'] : staged && checkedSignature === remoteSignature ? ['Der Entwurf ist gespeichert. Prüfe den Stand.', 'Klicke auf „Veröffentlichen“, sobald er für die SEC sichtbar sein soll.'] : ['Die Prüfung ist erfolgreich. Speichere den Stand als Entwurf.', 'Veröffentliche ihn anschließend separat.'];
+  async function checkRemote() {
+    if (!remote || !previewId) return;
+    setBusy(true); setError(''); setStaged(''); setNotice('');
+    try { const check = await remote.request<RemoteValidation>('/imports/' + previewId + '/validate', remoteContext()); setRemoteCheck(check); setCheckedSignature(remoteSignature); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Prüfung fehlgeschlagen.'); }
+    finally { setBusy(false); }
+  }
+  async function releaseRemote() {
+    if (!remote || !previewId || !readyToStage) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const check = await remote.request<RemoteValidation>('/imports/' + previewId + '/validate', remoteContext());
+      setRemoteCheck(check); setCheckedSignature(remoteSignature);
+      if (check.issues.length || !check.count) return;
+      const result = await remote.request<{import:{id:string}}>('/imports/' + previewId + '/stage', remoteContext());
+      setStaged(result.import.id); await remote.refresh(); setNotice(`${check.count} Datensätze als Entwurf gespeichert. Veröffentlichung separat bestätigen.`);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Import fehlgeschlagen.'); }
+    finally { setBusy(false); }
+  }
+  async function publishRemote() {
+    if (!remote || !staged || checkedSignature !== remoteSignature) return;
+    setBusy(true); setError('');
+    try { await remote.request('/imports/' + staged + '/publish', {}); await remote.refresh(); setStaged(''); setNotice('Veröffentlicht. Der persönliche Datenstand wird automatisch aktualisiert.'); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Veröffentlichung fehlgeschlagen.'); }
+    finally { setBusy(false); }
+  }
   function releaseImport() {
     const validationError = validateImport();
     if (validationError || !sourceName || !selectedSheet) { setError(validationError); return; }
@@ -299,7 +341,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
         </div>
         <div className="admin-import-layout">
           <div className="admin-page-grid">
-            <section className="admin-card admin-source-card">
+            <section className="admin-card admin-source-card" id={importFieldId('source')} tabIndex={-1}>
               <div className="admin-section-head"><div><span className="admin-step">01 · QUELLE</span><h2>Arbeitsmappe</h2></div><FileSpreadsheet size={23} /></div>
               <label className="admin-drop" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); void openFile(event.dataTransfer.files[0]); }}>
                 <span className="admin-drop-icon"><UploadCloud size={22} /></span>
@@ -307,8 +349,9 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
                 <input type="file" accept=".xlsx,.xlsm" onChange={event => void openFile(event.target.files?.[0])} />
               </label>
               {readingFile && <p role="status" className="admin-muted">{remote?'Arbeitsmappe wird geprüft…':'Arbeitsmappe wird lokal eingelesen…'}</p>}
+              {remote && <div className="import-inline-source-error"><ImportFieldFeedback problems={importProblems} field="source" /></div>}
               {demoSource ? <div className="admin-demo-source"><span className="admin-demo-marker">VORLAGE</span><div><strong>{importGroup === 'DA' ? 'HA / DA' : importGroup} · Pivot Liste</strong><p>Originale Feldnamen, keine Datei oder Personendaten eingelesen.</p></div></div> : !remote&&<button className="admin-text-link" onClick={loadDemoImport}>Pivot-Vorlage laden <ChevronRight size={15} /></button>}
-              {sheets.length > 0 ? <div className="admin-sheet-list"><label>Arbeitsblatt<AdminSelect ariaLabel="Arbeitsblatt" searchable value={sheetName} onChange={value => {
+              {sheets.length > 0 ? <div className="admin-sheet-list"><label id={importFieldId('sheet')}>Arbeitsblatt<AdminSelect ariaLabel="Arbeitsblatt" searchable value={sheetName} onChange={value => {
                 const nextName = value;
                 const nextSheet = sheets.find(item => item.name === nextName);
                 setSheetName(nextName);
@@ -319,34 +362,35 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
             <section className="admin-card admin-scope-card">
               <div className="admin-section-head"><div><span className="admin-step">02 · EINORDNUNG</span><h2>Geltungsbereich</h2></div><SlidersHorizontal size={22} /></div>
               <div className={["admin-form-grid", "admin-scope-grid", importGroup === "DA" ? "has-setting" : ""].join(" ")}>
-                <label>Obergruppe<AdminSelect ariaLabel="Obergruppe" value={importGroup} onChange={value => {
+                <label id={importFieldId('group')}>Obergruppe<AdminSelect ariaLabel="Obergruppe" value={importGroup} onChange={value => {
                   const next = value as SECGroup['id'];
                   setImportGroup(next);
                   resetImportModel(next, importSetting);
-                }} options={allowedGroups.map(item => ({ value: item.id, label: `${item.id} · ${item.description}` }))} /></label>
+                }} options={allowedGroups.map(item => ({ value: item.id, label: `${item.id} · ${item.description}` }))} /><ImportFieldFeedback problems={importProblems} field="group" /></label>
                 {importGroup === 'DA' ? <label>DA-Setting<AdminSelect ariaLabel="DA-Setting" value={importSetting} onChange={value => {
                   const next = value as DASetting;
                   setImportSetting(next);
                   resetImportModel('DA', next);
                 }} options={DA_SETTINGS.map(item => ({ value: item.value, label: item.label }))} /></label> : null}
-                {remote&&<label>Datenstand<AdminDatePicker ariaLabel="Datenstand" value={asOf} onChange={setAsOf}/></label>}
-                <label>Berichtsmonat<AdminMonthPicker value={importMonth} onChange={setImportMonth} ariaLabel="Berichtsmonat" /></label>
-                <label>Phase<AdminSelect ariaLabel="Phase" value={phase} onChange={value => {
+                {remote&&<label id={importFieldId('asOf')}>Datenstand<AdminDatePicker ariaLabel="Datenstand" value={asOf} onChange={setAsOf}/><ImportFieldFeedback problems={importProblems} field="asOf" /></label>}
+                <label id={importFieldId('month')}>Berichtsmonat<AdminMonthPicker value={importMonth} onChange={setImportMonth} ariaLabel="Berichtsmonat" /><ImportFieldFeedback problems={importProblems} field="month" /></label>
+                <label id={importFieldId('phase')}>Phase<AdminSelect ariaLabel="Phase" value={phase} onChange={value => {
                   const next = value as ImportPhase;
                   setPhase(next);
                   resetImportModel(importGroup, importSetting, next, subtype);
-                }} options={PHASES.map(item => ({ value: item.value, label: item.label, description: item.explanation }))} /></label>
+                }} options={PHASES.map(item => ({ value: item.value, label: item.label, description: item.explanation }))} /><ImportFieldFeedback problems={importProblems} field="phase" /></label>
                 <label className="admin-scope-subtype">Dateityp<AdminSelect ariaLabel="Dateityp" value={subtype} onChange={value => {
                   const next = value;
                   setSubtype(next);
                   resetImportModel(importGroup, importSetting, phase, next);
                 }} options={['Progress-Tracker', 'Monthly Closing', 'Targetliste', 'Sonstige Quelle'].map(value => ({ value, label: value }))} /></label>
               </div>
+              <ImportFieldFeedback problems={importProblems} field="sheet" />
               <p className="admin-context-note">{PHASES.find(item => item.value === phase)?.explanation}</p>
             </section>
-            <section className="admin-card admin-mapping-card">
-              <div className="admin-section-head"><div><span className="admin-step">03 · MAPPING</span><h2>Importvertrag je Spalte</h2></div><Columns3 size={23} /></div>
-              {!selectedSheet ? <div className="admin-empty compact"><Columns3 size={26} /><h3>Erst eine Arbeitsmappe wählen</h3><p>Danach erhält jede erkannte Excel-Spalte eine eigene Mapping-Zeile.</p></div> : closingMode ? <ClosingMappingWorkspace key={importGroup + sheetName} sheet={selectedSheet} group={importGroup} metrics={importMetrics} mappings={columnMappings} onChange={next => { setColumnMappings(next); setError(''); setNotice(''); }} /> : <ColumnMappingWorkspace
+            <section className="admin-card admin-mapping-card" id={importFieldId('mapping')} tabIndex={-1}>
+              <div className="admin-section-head"><div><span className="admin-step">03 · MAPPING</span><h2>Excel-Spalten zuordnen</h2></div><Columns3 size={23} /></div>
+              {!selectedSheet ? <div className="admin-empty compact"><Columns3 size={26} /><h3>Erst eine Arbeitsmappe wählen</h3><p>Danach erhält jede erkannte Excel-Spalte eine eigene Mapping-Zeile.</p></div> : closingMode || (remote && sourceIsClosing) ? <ClosingMappingWorkspace key={importGroup + sheetName} sheet={selectedSheet} group={importGroup} metrics={importMetrics} mappings={columnMappings} problems={importProblems} onChange={next => { setColumnMappings(next); setError(''); setNotice(''); }} /> : remote ? <WeeklyMappingWorkspace sheet={selectedSheet} group={importGroup} metrics={importMetrics} mappings={columnMappings} problems={importProblems} onChange={next => { setColumnMappings(next); setError(''); setNotice(''); }} /> : <ColumnMappingWorkspace
                 sheet={selectedSheet}
                 group={importGroup}
                 setting={importSetting}
@@ -359,24 +403,32 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
                 onSplitCategoriesChange={setSplitCategories}
               />}
             </section>
-            {remote&&remoteCheck?.identityMatches&&<ImportIdentityReview matches={remoteCheck.identityMatches} people={remoteCheck.people??[]} choices={personMatches} onChange={(row,person)=>{setPersonMatches(current=>({...current,[String(row)]:person}));setStaged('');setError('');setNotice('');}}/>}
+            {remote&&remoteCheck?.identityMatches&&<ImportIdentityReview matches={remoteCheck.identityMatches} people={remoteCheck.people??[]} problems={importProblems} choices={personMatches} onChange={(row,person)=>{setPersonMatches(current=>({...current,[String(row)]:person}));setStaged('');setError('');setNotice('');}}/>}
           </div>
           <aside className="admin-side-stack admin-import-aside">
             <section className="admin-card admin-release-card">
-              <span className="admin-step">{remote?'05':'04'} · PRÜFEN</span><h2>Freigabe-Vorschau</h2>
+              <span className="admin-step">{remote?'05':'04'} · PRÜFEN</span><h2>Import prüfen</h2>
               <div className="admin-release-summary">
-                <div><span>Aktiver Stand</span><strong>{sameMonthImports.length ? `v${sameMonthImports.length} · ${sameMonthImports.at(-1)?.phase}` : 'Keiner'}</strong></div>
+                <div><span>Aktiver Stand</span><strong>{sameMonthImports.length ? `v${sameMonthImports.length} · ${PHASES.find(p => p.value === sameMonthImports.at(-1)?.phase)?.label ?? 'Import'}` : 'Keiner'}</strong></div>
                 <div><span>Neuer Stand</span><strong>{selectedSheet ? `${importGroup} · ${importMonth}` : 'Datei wählen'}</strong></div>
-                <div><span>Mapping</span><strong>{selectedSheet ? `${mappedColumns.length} zugeordnet · ${columnMappings.length - mappedColumns.length} ignoriert` : '—'}</strong></div>
-                <div><span>Split</span><strong>{splitCategories.length ? splitCategories.join(' · ') : 'Nicht gewählt'}</strong></div>
+                <div><span>Mapping</span><strong>{selectedSheet ? `${mappedColumns.filter(m => m.column).length} zugeordnet · ${unresolvedColumns.length + mappedColumns.filter(m => !m.column).length} offen` : '—'}</strong></div>
+                <div><span>Split</span><strong>{splitCategories.length ? splitCategories.map(key => ({group:'Gruppe', setting:'DA-Setting', block:'KPI-Bereich', metric:'Kennzahl', market:'Markt', person:'Person', snapshot:'Datenstand'}[key])).join(' · ') : 'Nicht gewählt'}</strong></div>
               </div>
-              {selectedSheet && !validateImport() ? <p className="admin-validation-ok"><Check size={16} /> {closingMode ? 'Mapping und Monatsdaten geprüft' : 'Mapping vollständig für die lokale Vorschau'}</p> : <p className="admin-validation-pending"><Columns3 size={16} /> {selectedSheet ? validateImport() : 'Datei und Arbeitsblatt auswählen.'}</p>}
-              {error ? <p className="admin-error" role="alert">{error}</p> : null}
-              <p className="admin-prototype-note">{remote?'Die Prüfung speichert noch keine Veröffentlichung. Nach dem Speichern als Entwurf gibst du den Stand ausdrücklich frei.':closingMode ? 'Zellwerte werden lokal zugeordnet und bleiben im Arbeitsspeicher dieser Sitzung. Gespeichert werden nur Mapping und Importmetadaten. Keine Datenbank oder Übertragung.' : 'Diese Freigabe speichert nur den Mapping-Vertrag und Metadaten im Browser. Keine Datei, Zelle oder Person wird hochgeladen.'}</p>
-              {remote&&<button className="admin-subtle wide" disabled={!previewId||busy} onClick={()=>void checkRemote()}>Daten prüfen</button>}
-              <button className="admin-primary wide" onClick={()=>remote?void releaseRemote():releaseImport()} disabled={busy||!selectedSheet || readingFile || (!remote&&phase === 'MONTH_FINALIZATION' && subtype === 'Monthly Closing' && Boolean(validateImport()))}><ShieldCheck size={17} /> {remote?busy?'Speichern…':'Als Entwurf speichern':closingMode ? importedClosing ? 'Bereits lokal importiert' : 'Lokal importieren' : 'Vorschau-Stand freigeben'}</button>
-              {remote&&staged&&checkedSignature===remoteSignature&&<button className="admin-primary wide" disabled={busy} onClick={()=>void publishRemote()}>Veröffentlichen</button>}
-              {remoteCheck&&remote&&<div className="admin-muted"><p>{remoteCheck.count} passende Datensätze · {remoteCheck.otherMonths} andere Monate · {remoteCheck.specialValues} Sonderwerte</p>{remoteCheck.issues.slice(0,12).map((issue,i)=><p className="admin-error" key={i}>Zeile {issue.row}{issue.column||issue.field?` · ${issue.column||issue.field}`:''}: {issue.message}</p>)}</div>}
+              {remote ? <>
+                <p className={readyToStage ? 'admin-validation-ok' : 'admin-validation-pending'} role="status">{readyToStage ? <Check size={16} /> : <Columns3 size={16} />}{busy ? 'Prüfung läuft…' : importProblems.length ? `${importProblems.length} ${importProblems.length === 1 ? 'Hinweis' : 'Hinweise'} vor dem Speichern beheben` : currentCheck ? 'Daten geprüft' : 'Prüfung ausstehend'}</p>
+                <div className="import-next-step"><strong>{nextSteps.length > 1 ? 'So gehst du weiter' : 'Nächster Schritt'}</strong><ol>{nextSteps.map(step => <li key={step}>{step}</li>)}</ol></div>
+                <button className="admin-subtle wide" disabled={!previewId || busy || readingFile} onClick={() => void checkRemote()}>{busy ? 'Bitte warten…' : 'Daten prüfen'}</button>
+                <button className="admin-primary wide" disabled={busy || readingFile || !readyToStage} onClick={() => void releaseRemote()}><ShieldCheck size={17} /> Als Entwurf speichern</button>
+                {staged && checkedSignature === remoteSignature && <button className="admin-primary wide" disabled={busy} onClick={() => void publishRemote()}>Veröffentlichen</button>}
+                <p className="admin-prototype-note">„Daten prüfen“ veröffentlicht nichts. Erst „Als Entwurf speichern“ legt den Import ab. „Veröffentlichen“ gibt ihn danach für die SEC frei.</p>
+                {currentCheck && !currentCheck.count && currentCheck.issues.some(issue => issue.row === 0) ? <p className="import-check-status">Die Datenzeilen werden nach vollständiger Zuordnung geprüft.</p> : currentCheck && <p className="import-check-status">{currentCheck.count} Datensätze im gewählten Monat{currentCheck.otherMonths > 0 ? ` · ${currentCheck.otherMonths} Zeilen aus anderen Monaten ausgelassen` : ''}{currentCheck.specialValues > 0 ? ` · ${currentCheck.specialValues} Sonderwerte bleiben erhalten` : ''}</p>}
+                <ImportProblemList problems={importProblems} />
+              </> : <>
+                {selectedSheet && !validateImport() ? <p className="admin-validation-ok"><Check size={16} /> {closingMode ? 'Mapping und Monatsdaten geprüft' : 'Mapping vollständig für die lokale Vorschau'}</p> : <p className="admin-validation-pending"><Columns3 size={16} /> {selectedSheet ? validateImport() : 'Datei und Arbeitsblatt auswählen.'}</p>}
+                {error && <p className="admin-error" role="alert">{error}</p>}
+                <p className="admin-prototype-note">{closingMode ? 'Zellwerte bleiben im Arbeitsspeicher dieser Sitzung. Gespeichert werden nur Mapping und Importmetadaten.' : 'Diese Freigabe speichert nur den Mapping-Vertrag und Metadaten im Browser.'}</p>
+                <button className="admin-primary wide" onClick={releaseImport} disabled={!selectedSheet || readingFile || (phase === 'MONTH_FINALIZATION' && subtype === 'Monthly Closing' && Boolean(validateImport()))}><ShieldCheck size={17} />{closingMode ? importedClosing ? 'Bereits lokal importiert' : 'Lokal importieren' : 'Vorschau-Stand freigeben'}</button>
+              </>}
               {closingPreview && <ClosingImportPreview result={importedClosing?.result ?? closingPreview} imported={Boolean(importedClosing)} />}
             </section>
             <section className="admin-card admin-source-summary"><span className="admin-step">QUELLSTRUKTUR</span><h2>{selectedSheet?.name ?? 'Kein Blatt gewählt'}</h2>{selectedSheet ? <><div className="admin-source-metrics"><span><b>{selectedSheet.rows}</b> Zeilen</span><span><b>{selectedSheet.columns.length}</b> Spalten</span><span><b>{selectedSheet.dimension}</b> Bereich</span></div><p className="admin-muted">Es werden nur Blattstruktur und Header gezeigt. Zellwerte und personenbezogene Daten bleiben verborgen.</p></> : <p className="admin-muted">Die Struktur erscheint nach dem lokalen Einlesen.</p>}</section>

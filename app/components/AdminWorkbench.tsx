@@ -177,7 +177,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   }
   function resetImportModel(nextGroup: SECGroup['id'], nextSetting: DASetting, nextPhase = phase, nextSubtype = subtype) {
     if(remote&&nextGroup!=='DA'){nextSetting='full';setImportSetting('full');}
-    const configured = configs.filter(item => item.group === nextGroup && (nextGroup !== 'DA' || item.setting === nextSetting)).at(-1)?.metrics ?? initialMetrics(nextGroup, nextSetting);
+    const configured = configs.filter(item => item.group === nextGroup && (nextGroup !== 'DA' || item.setting === nextSetting) && (!remote || item.effective.slice(0,10) <= asOf)).sort((a,b) => a.effective.localeCompare(b.effective) || a.saved.localeCompare(b.saved)).at(-1)?.metrics ?? initialMetrics(nextGroup, nextSetting);
     const nextDatasets = defaultDatasets(nextPhase, nextSubtype, nextGroup);
     setDatasets(nextDatasets);
     setSplitCategories(defaultSplitCategories(nextGroup));
@@ -187,7 +187,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
       const source = nextPhase === 'MONTH_FINALIZATION' && nextSubtype === 'Monthly Closing' ? { sheet: template, mappings: closingMappings(template, nextGroup, configured) } : meetingWorkbook(nextGroup, nextSetting, nextPhase);
       setSheets([source.sheet]); setSheetName(source.sheet.name); setColumnMappings(source.mappings);
     } else if (selectedSheet) {
-      const suggested = isPivotSheet(selectedSheet.name) && nextPhase === 'MONTH_FINALIZATION' && nextSubtype === 'Monthly Closing' ? closingMappings(selectedSheet, nextGroup, configured)
+      const suggested = isPivotSheet(selectedSheet.name) && (remote || (nextPhase === 'MONTH_FINALIZATION' && nextSubtype === 'Monthly Closing')) ? closingMappings(selectedSheet, nextGroup, configured)
         : suggestColumnMappings(selectedSheet, nextGroup, nextSetting, configured).map(item => item.dataset !== 'ignore' && !nextDatasets.includes(item.dataset) ? { ...item, dataset: 'ignore' as const, field: '', required: false } : item);
       setColumnMappings(suggested);
     }
@@ -355,7 +355,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
                 const nextName = value;
                 const nextSheet = sheets.find(item => item.name === nextName);
                 setSheetName(nextName);
-                setColumnMappings(nextSheet ? isPivotSheet(nextSheet.name) && phase === 'MONTH_FINALIZATION' && subtype === 'Monthly Closing' ? closingMappings(nextSheet, importGroup, importMetrics) : suggestColumnMappings(nextSheet, importGroup, importSetting, importMetrics) : []);
+                setColumnMappings(nextSheet ? isPivotSheet(nextSheet.name) && (remote || (phase === 'MONTH_FINALIZATION' && subtype === 'Monthly Closing')) ? closingMappings(nextSheet, importGroup, importMetrics) : suggestColumnMappings(nextSheet, importGroup, importSetting, importMetrics) : []);
                 setError(''); setNotice('');
               }} options={sheets.map(sheet => ({ value: sheet.name, label: sheet.name, description: `${sheet.rows} Zeilen · ${sheet.columns.length} Spalten` }))} /></label><span>{sheets.length} Blätter · {selectedSheet?.columns.length ?? 0} Spalten</span></div> : null}
             </section>

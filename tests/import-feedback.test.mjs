@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { contextProblems, explainImportFailure, explainImportIssue, mappingProblems, weeklyFields } from '../app/lib/importFeedback.ts';
+import { closingFeedbackMappings, contextProblems, explainImportFailure, explainImportIssue, mappingProblems, weeklyFields } from '../app/lib/importFeedback.ts';
 import { initialMetrics } from '../app/lib/admin.ts';
 import { closingMappings, closingTemplate } from '../app/lib/closingImport.ts';
 const metrics = initialMetrics('HE', 'full');
@@ -57,4 +57,15 @@ test('period, phase, identity, empty values and request failures lead to the rel
  assert.ok(contextProblems('2026-11','2026-11-31','WEEKLY_PROGRESS',sheet,'2026-11-11').some(p=>p.target==='asOf'));
  assert.ok(contextProblems('2026-11','2026-11-12','WEEKLY_PROGRESS',sheet,'2026-11-11').some(p=>/Zukunft/.test(p.title)));
  assert.deepEqual(contextProblems('2026-11','2026-11-01','WEEKLY_PROGRESS',sheet,'2026-11-11'),[]);
+});
+
+test('a changed closing configuration exposes new fields empty and preserves earlier explicit choices',()=>{
+ const source=closingTemplate('HE'),original=closingMappings(source,'HE');
+ const ms=[...metrics,{...metrics[0],id:'new-criterion',label:'Neues Kriterium'}];
+ const updated=closingFeedbackMappings({sheet:source,metrics:ms,mappings:original},'HE');
+ assert.deepEqual(updated.slice(0,original.length),original);
+ const extra=updated.find(m=>m.field==='new-criterion.achievement');assert.ok(extra);assert.equal(extra.column,'');
+ const problems=mappingProblems({sheet:source,metrics:ms,mappings:updated},'HE',true);assert.ok(problems.some(p=>p.target===extra.field&&/Neues Kriterium/.test(p.title)));
+ extra.column='ZZ';const reverted=closingFeedbackMappings({sheet:source,metrics,mappings:updated},'HE');assert.equal(reverted.find(m=>m.field===extra.field).column,'ZZ');
+ assert.equal(original.some(m=>m.field===extra.field),false); // existing input is not mutated
 });

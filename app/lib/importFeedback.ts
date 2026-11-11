@@ -1,5 +1,5 @@
 import type { AdminMetric, ImportPhase, SheetPreview, SourceColumnMapping } from './admin.ts';
-import { closingDefinitions } from './closingImport.ts';
+import { closingDefinitions, closingMappings } from './closingImport.ts';
 import type { SECGroup } from './groups.ts';
 
 export type ImportIssue = { row: number; column?: string; field?: string; message: string };
@@ -25,6 +25,12 @@ export function weeklyFields(metrics: AdminMetric[], group: SECGroup['id'], mapp
   ];
   const fields = new Set(base.map(m => m.field));
   return [...base.map(def => ({ ...def, ...mappings.find(m => m.field === def.field && m.dataset !== 'ignore'), sourceLabel: def.sourceLabel })), ...mappings.filter(m => m.dataset !== 'ignore' && m.field && !fields.has(m.field))];
+}
+
+/** Retain explicit choices across date/config changes; newly required fields stay unassigned. */
+export function closingFeedbackMappings(ctx: FeedbackContext, group: SECGroup['id']): SourceColumnMapping[] {
+  if (!ctx.sheet) return ctx.mappings;
+  return [...ctx.mappings, ...closingMappings(ctx.sheet, group, ctx.metrics).filter(next => !ctx.mappings.some(item => item.id === next.id && item.field === next.field)).map(item => ({ ...item, column: '' }))];
 }
 
 export function mappingProblems(ctx: FeedbackContext, group: SECGroup['id'], closing: boolean): ImportProblem[] {

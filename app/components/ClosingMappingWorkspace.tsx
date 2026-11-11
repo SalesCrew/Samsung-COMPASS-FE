@@ -7,7 +7,7 @@ import { closingDefinitions, closingMappings, mappingConflicts, type ClosingResu
 import type { SECGroup } from '../lib/groups';
 import { AdminSelect } from './AdminSelect';
 import './closingImport.css';
-import { explainImportIssue, importFieldId, type ImportProblem } from '../lib/importFeedback';
+import { closingFeedbackMappings, explainImportIssue, importFieldId, type ImportProblem } from '../lib/importFeedback';
 import { ImportFieldFeedback, ImportProblemList } from './ImportFeedback';
 
 export function ClosingMappingWorkspace({ sheet, group, metrics, mappings, problems = [], onChange }: {
@@ -17,12 +17,15 @@ export function ClosingMappingWorkspace({ sheet, group, metrics, mappings, probl
   const [section, setSection] = useState('all');
   useEffect(() => { const reveal = () => { setQuery(''); setSection('all'); }; window.addEventListener('sec-import-reveal', reveal); return () => window.removeEventListener('sec-import-reveal', reveal); }, []);
   const definitions = closingDefinitions(group, metrics);
-  const sections = [...new Set(mappings.map(item => item.sourceSection).filter((section): section is string => Boolean(section)))];
-  const conflicts = mappingConflicts(mappings);
-  const active = mappings.filter(item => item.dataset !== 'ignore');
-  const patch = (id: string, change: Partial<SourceColumnMapping>) => onChange(mappings.map(item => item.id === id ? { ...item, ...change } : item));
+  // A date/configuration change can introduce a new field. Keep existing choices
+  // and expose the new field empty, so it can be explicitly assigned.
+  const rows = closingFeedbackMappings({ sheet, metrics, mappings }, group);
+  const sections = [...new Set(rows.map(item => item.sourceSection).filter((section): section is string => Boolean(section)))];
+  const conflicts = mappingConflicts(rows);
+  const active = rows.filter(item => item.dataset !== 'ignore');
+  const patch = (id: string, change: Partial<SourceColumnMapping>) => onChange(rows.map(item => (item.id ?? item.field) === id ? { ...item, ...change } : item));
   const options = [{ value: '', label: '—', description: 'Keine Spalte gewählt' }, ...sheet.columns.map(column => ({ value: column.key, label: column.key, description: column.label || 'Ohne Überschrift' }))];
-  const filtered = mappings.filter(item => (section === 'all' || item.sourceSection === section)
+  const filtered = rows.filter(item => (section === 'all' || item.sourceSection === section)
     && `${item.column} ${item.sourceLabel}`.toLowerCase().includes(query.trim().toLowerCase()));
 
   return <div className="closing-mapping">
@@ -33,26 +36,26 @@ export function ClosingMappingWorkspace({ sheet, group, metrics, mappings, probl
       {[{ label: 'Alle', value: 'all' }, ...sections.map(label => ({ label, value: label }))].map(item => <button type="button" key={item.value} aria-pressed={section === item.value} onClick={() => setSection(item.value)}>{item.label}</button>)}
     </div>
     <div className="mapping-toolbar"><label className="mapping-search"><Search size={16} /><input aria-label="Pivot-Felder suchen" placeholder="Feld oder Spalte suchen" value={query} onChange={event => setQuery(event.target.value)} /></label>
-      <span className="mapping-count">{active.length} aktiv · {mappings.length - active.length} deaktiviert</span></div>
+      <span className="mapping-count">{active.length} aktiv · {rows.length - active.length} deaktiviert</span></div>
     {conflicts.size ? <div className="closing-conflict" role="alert"><CircleAlert size={16} /><div><strong>Spaltenkonflikt</strong>{[...conflicts].map(([column, labels]) => <p key={column}>Spalte {column} ist mehrfach zugeordnet: {labels.join(' und ')}. Wähle eine andere Spalte oder deaktiviere eines der Felder.</p>)}</div></div> : null}
     <div className="closing-map-table" role="table" aria-label="Pivot-Spaltenmapping">
       <div className="closing-map-head" role="row"><span>Excel-Feld</span><span>Spalte</span><span>Aktive Konfiguration</span><span>Datensatz</span><span>Übernehmen</span></div>
       <div className="closing-map-body">
         {filtered.map(item => {
           const enabled = item.dataset !== 'ignore';
-          const definition = definitions.find(def => def.id === item.id)!;
+          const definition = definitions.find(def => def.id === item.id) ?? { required: item.required, section: item.sourceSection ?? '', dataset: item.dataset === 'ignore' ? 'sellout' as const : item.dataset };
           const configured = metrics.find(metric => metric.active && (item.id === `config:${metric.dataset ?? (group === 'ST' ? 'softbonus' : 'sellout')}:${metric.id}` || item.field === `${metric.id}.achievement`));
           const custom = item.id?.startsWith('config:');
           const current = sheet.columns.find(column => column.key === item.column);
           const conflict = enabled && conflicts.has(item.column);
           const missing = enabled && !item.column;
           const changed = current && current.label !== item.sourceLabel;
-          return <div role="row" key={item.id} data-mapping-id={item.id} id={importFieldId(item.field)} tabIndex={-1} className={`closing-map-row${conflict || missing ? ' has-error' : ''}${enabled ? '' : ' is-disabled'}`}>
+          return <div role="row" key={item.id ?? item.field} data-mapping-id={item.id} id={importFieldId(item.field)} tabIndex={-1} className={`closing-map-row${conflict || missing ? ' has-error' : ''}${enabled ? '' : ' is-disabled'}`}>
             <div className="closing-field"><strong>{custom ? current?.label || 'Excel-Feld wählen' : item.sourceLabel}</strong>{definition.required && <small>Pflichtfeld</small>}{!custom && enabled && changed && <small>Excel {item.column}: {current.label || 'ohne Überschrift'}</small>}{conflict && <span>Spalte {item.column} mehrfach verwendet</span>}{missing && <span>Quellspalte fehlt</span>}</div>
-            <AdminSelect compact searchable invalid={problems.some(p => p.target === item.field)} describedBy={problems.some(p => p.target === item.field) ? importFieldId(item.field) + '-help' : undefined} ariaLabel={`Quellspalte für ${item.sourceLabel}`} value={item.column} disabled={!enabled} onChange={column => patch(item.id!, { column, sourceSection: custom ? 'Aktive Konfiguration' : sheet.columns.find(source => source.key === column)?.section || definition.section })} options={options} />
+            <AdminSelect compact searchable invalid={problems.some(p => p.target === item.field)} describedBy={problems.some(p => p.target === item.field) ? importFieldId(item.field) + '-help' : undefined} ariaLabel={`Quellspalte für ${item.sourceLabel}`} value={item.column} disabled={!enabled} onChange={column => patch(item.id ?? item.field, { column, sourceSection: custom ? 'Aktive Konfiguration' : sheet.columns.find(source => source.key === column)?.section || definition.section })} options={options} />
             <span className="closing-configured-field">{configured ? <>{configured.label}<small>{configured.dataset === 'softbonus' || group === 'ST' ? 'Softbonus' : 'KPI'} · {configured.weight ?? '—'} % Gewicht</small></> : '—'}</span>
             <span className="closing-source-section">{custom ? current?.section || '—' : item.sourceSection}</span>
-            <label className="mapping-required"><input type="checkbox" aria-label={`${item.sourceLabel} übernehmen`} checked={enabled} onChange={event => patch(item.id!, { dataset: event.target.checked ? definition.dataset : 'ignore' })} /><i /></label>
+            <label className="mapping-required"><input type="checkbox" aria-label={`${item.sourceLabel} übernehmen`} checked={enabled} onChange={event => patch(item.id ?? item.field, { dataset: event.target.checked ? definition.dataset : 'ignore' })} /><i /></label>
             <ImportFieldFeedback problems={problems} field={item.field} />
           </div>;
         })}

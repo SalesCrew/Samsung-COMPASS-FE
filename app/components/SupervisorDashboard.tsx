@@ -5,7 +5,9 @@ import type {Session} from '@supabase/supabase-js';
 import {Eye,RefreshCw} from 'lucide-react';
 import {SECAPIError,secRequest,reportFromRow,weeklyFromRows,type DashboardData,type SupervisorPerson} from '../lib/secApi';
 import {SECWorkbench,type LivePhoneData} from './SECWorkbench';
-import {SupervisorSelect} from './SupervisorSelect';
+import {SupervisorSelect,supervisorGroupSelection} from './SupervisorSelect';
+import {SupervisorGroupOverview} from './SupervisorGroupOverview';
+import type {SupervisorGroupData} from '../lib/supervisorGroup';
 import './supervisor.css';
 
 // Viewing an employee never acknowledges or changes their publications.
@@ -14,6 +16,7 @@ const acknowledge=()=>{};
 export function SupervisorDashboard({session,onInvalidSession}:{session:Session;onInvalidSession:()=>void}){
  const[people,setPeople]=useState<SupervisorPerson[]|null>(null),[selection,setSelection]=useState('');
  const[data,setData]=useState<DashboardData|null>(null),[directoryError,setDirectoryError]=useState(''),[error,setError]=useState('');
+ const[groupData,setGroupData]=useState<SupervisorGroupData|null>(null);
  const[revision,setRevision]=useState(0),[busy,setBusy]=useState(false);
  useEffect(()=>{
   const controller=new AbortController();let running=false;
@@ -22,7 +25,7 @@ export function SupervisorDashboard({session,onInvalidSession}:{session:Session;
    try{
     const result=await secRequest<{people:SupervisorPerson[]}>('/supervisor/people',{signal:controller.signal},session);
     if(controller.signal.aborted)return;
-    setPeople(result.people);setSelection(current=>result.people.some(p=>p.assignment_id===current)?current:result.people[0]?.assignment_id??'');setDirectoryError('');
+    setPeople(result.people);setSelection(current=>result.people.some(p=>p.assignment_id===current||p.department_id===supervisorGroupSelection(current))?current:result.people[0]?.assignment_id??'');setDirectoryError('');
    }catch(e){if(!controller.signal.aborted){if(e instanceof SECAPIError&&(e.status===401||e.code==='ACCOUNT_DISABLED'||e.code==='FORBIDDEN')){setPeople(null);setData(null);onInvalidSession();}else setDirectoryError(e instanceof Error?e.message:'SEC konnten nicht geladen werden.');}}
    finally{running=false;}
   }
@@ -36,10 +39,11 @@ export function SupervisorDashboard({session,onInvalidSession}:{session:Session;
   async function refresh(){
    if(running||document.visibilityState==='hidden')return;running=true;setBusy(true);
    try{
-    const result=await secRequest<DashboardData>('/dashboard?assignment='+encodeURIComponent(selection),{signal:controller.signal},session);
-    if(controller.signal.aborted)return;
-    setData(result);setError('');
-   }catch(e){if(!controller.signal.aborted){if(e instanceof SECAPIError&&(e.status===401||e.code==='ACCOUNT_DISABLED')){setData(null);onInvalidSession();}else{if(e instanceof SECAPIError&&e.status===403)setData(null);setError(e instanceof Error?e.message:'Die SEC-Ansicht konnte nicht geladen werden.');}}}
+    const division=supervisorGroupSelection(selection);
+    if(division){const result=await secRequest<SupervisorGroupData>('/supervisor/groups/'+division,{signal:controller.signal},session);if(controller.signal.aborted)return;setGroupData(result);}
+    else{const result=await secRequest<DashboardData>('/dashboard?assignment='+encodeURIComponent(selection),{signal:controller.signal},session);if(controller.signal.aborted)return;setData(result);}
+    setError('');
+   }catch(e){if(!controller.signal.aborted){if(e instanceof SECAPIError&&(e.status===401||e.code==='ACCOUNT_DISABLED')){setData(null);setGroupData(null);onInvalidSession();}else{if(e instanceof SECAPIError&&e.status===403){setData(null);setGroupData(null);}setError(e instanceof Error?e.message:'Die SEC-Ansicht konnte nicht geladen werden.');}}}
    finally{running=false;if(!controller.signal.aborted)setBusy(false);}
   }
   void refresh();const timer=window.setInterval(()=>void refresh(),20000);
@@ -47,6 +51,8 @@ export function SupervisorDashboard({session,onInvalidSession}:{session:Session;
   return()=>{controller.abort();window.clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
  },[session,selection,onInvalidSession,revision]);
  const current=people?.find(p=>p.assignment_id===selection);
+ const division=supervisorGroupSelection(selection);
+ const group=division&&people?.some(p=>p.department_id===division)&&groupData?.groupId===division?groupData:null;
  // A late response cannot show the previous person's values below a new name.
  const shown=current&&data?.selectedAssignment===selection?data:null;
  const live:LivePhoneData|null=shown&&current?{
@@ -63,7 +69,8 @@ export function SupervisorDashboard({session,onInvalidSession}:{session:Session;
   {error&&<p className="supervisor-message" role="alert">{error} <button type="button" onClick={()=>setRevision(n=>n+1)}>Erneut versuchen</button></p>}
   {!people&&!directoryError&&<p className="supervisor-message" role="status">SEC werden geladen…</p>}
   {people?.length===0&&<section className="supervisor-empty"><h1>Noch keine SEC verfügbar</h1><p>Freigeschaltete SEC erscheinen hier, sobald ihr Konto zugeordnet ist.</p></section>}
-  {selection&&!live&&!error&&<p className="supervisor-message" role="status">SEC-Ansicht wird geladen…</p>}
+  {selection&&!live&&!group&&!error&&<p className="supervisor-message" role="status">{division?'Gruppendurchschnitt':'SEC-Ansicht'} wird geladen…</p>}
   {live&&<SECWorkbench key={selection} live={live}/>}
+  {group&&<SupervisorGroupOverview key={selection} data={group}/>}
  </main>;
 }

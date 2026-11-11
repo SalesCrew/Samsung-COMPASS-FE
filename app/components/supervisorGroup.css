@@ -1,0 +1,70 @@
+.supervisor-option.is-group { margin-bottom: 3px; border-bottom: 1px solid #edf1f7; border-radius: 7px 7px 0 0; }
+.supervisor-option.is-group strong { color: #0651bb; }
+.supervisor-group-view { --sec-blue: #0651bb; --sec-green: #04b87a; --sec-text: #07152f; --sec-surface: #fff; --sec-border: #e7edf7; --sec-muted: #6c7da8; --sec-copy-muted: #526b91; --sec-inactive: #b7c4e0; --card-radius: 20px; --card-shadow: 0 2px 12px #0000000d; --border-opacity: .3; }
+.group-overview-heading { padding: 20px 20px 0; }
+.group-overview-heading h1 { margin: 0; font-size: 20px; letter-spacing: -.025em; font-weight: 600; }
+.group-overview-heading > p { margin: 5px 0 15px; color: #667792; font-size: 11px; }
+.group-month-field { display: grid; gap: 6px; color: #667792; font-size: 11px; }
+.group-overview-cards { display: grid; gap: 16px; margin: 14px 16px 0; padding-bottom: 30px; }
+.group-card-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px 12px; margin-bottom: 16px; }
+.supervisor-group-view .group-card-heading h2, .group-section-heading h2 { font-size: 15px; }
+.group-card-heading > span { color: #667792; font-size: 10px; line-height: 1.5; }
+.group-mean-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.group-mean { min-width: 0; display: grid; gap: 7px; }
+.group-mean > span { font-size: 12px; color: #526b91; }
+.group-mean > strong { display: flex; align-items: baseline; gap: 3px; font-size: clamp(20px,6vw,29px); font-weight: 600; letter-spacing: -.04em; line-height: 1.2; overflow-wrap: anywhere; }
+.group-mean > strong > small { font-size: 13px; font-weight: 500; letter-spacing: 0; }
+.group-mean > small, .group-coverage-note { font-size: 10px; color: #667792; line-height: 1.6; }
+.group-coverage-note { margin: 12px 0 0; }
+.supervisor-group-view [data-tone=positive] { color: #04b87a; }
+.supervisor-group-view [data-tone=warning] { color: #ba7b25; }
+.supervisor-group-view [data-tone=default] { color: #0651bb; }
+.supervisor-group-view [data-tone=missing] { color: #8996aa; }
+.group-level-distribution { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 18px; }
+.group-level-distribution > div { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; padding: 8px 0; border-bottom: 2px solid #b56f43; font-size: 11px; }
+.group-level-distribution > div[data-level="1"] { border-color: #8592a8; }
+.group-level-distribution > div[data-level="2"] { border-color: #c89211; }
+.group-level-distribution strong { font-size: 17px; }
+.group-rolling-premiums { border-top: 1px solid #edf1f7; padding-top: 16px; margin-top: 16px; }
+.group-metric-list > button { display: grid; grid-template-columns: minmax(0,1fr) auto 15px; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 12px 0; border: 0; border-top: 1px solid #edf1f7; background: transparent; text-align: left; cursor: pointer; }
+.group-metric-list > button:first-child { border-top: 0; padding-top: 0; }
+.group-metric-list > button > span { min-width: 0; }
+.group-metric-list strong { display: block; font-size: 12px; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
+.group-metric-list small { display: block; margin-top: 4px; color: #667792; font-size: 10px; line-height: 1.5; }
+.group-metric-list b { font-size: 20px; font-weight: 550; white-space: nowrap; }
+.group-metric-list svg { color: #7d92b4; }
+.group-metric-list > button:hover strong { color: #0651bb; }
+.group-metric-detail > h3 { margin: 16px 0; font-size: 17px; }
+.group-metric-detail > .group-mean { margin: 16px 0; }
+.group-back { display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 0; border: 0; background: transparent; color: #0651bb; font-size: 12px; cursor: pointer; }
+.group-detail-values { display: grid; gap: 12px; margin: 20px 0; }
+.group-detail-values > div { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: start; font-size: 12px; line-height: 1.5; }
+.group-detail-values dd { margin: 0; text-align: right; font-weight: 550; }
+.group-detail-values dd small, .group-history-table td small { display: block; margin-top: 4px; font-weight: 400; font-size: 9px; color: #667792; }
+.group-table-scroll { overflow-x: auto; scrollbar-width: none; }
+.group-table-scroll::-webkit-scrollbar { display: none; }
+.group-history-table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 11px; line-height: 1.5; }
+.group-history-table caption { text-align: left; margin-bottom: 10px; color: #667792; font-size: 11px; }
+.group-history-table th, .group-history-table td { padding: 10px 0; border-bottom: 1px solid #edf1f7; text-align: right; font-weight: 400; }
+.group-history-table th:first-child { text-align: left; padding-right: 10px; }
+.group-history-table thead { color: #667792; font-size: 10px; }
+.group-trend-legend { display: flex; gap: 18px; font-size: 11px; color: #667792; }
+.group-trend-legend span { display: flex; align-items: center; gap: 6px; }
+.group-trend-legend i { width: 6px; height: 6px; border-radius: 50%; background: #0651bb; }
+.group-trend-legend span:last-child i { background: #04b87a; }
+.group-trend svg { width: 100%; display: block; margin-top: 16px; overflow: visible; }
+.group-trend text { fill: #667792; font-size: 16px; }
+.group-trend path { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.group-trend-sellout { stroke: #0651bb; fill: #0651bb; }
+.group-trend-softbonus { stroke: #04b87a; fill: #04b87a; }
+.group-target-line { stroke: #dfe7f2; stroke-width: 1; stroke-dasharray: 4 5; }
+.group-trend summary { color: #0651bb; font-size: 11px; cursor: pointer; padding-block: 8px; }
+.group-section-heading { padding: 6px 4px 10px; }
+.group-section-heading h2 { margin: 0; font-weight: 550; }
+.group-section-heading p, .group-weekly-date { font-size: 11px; color: #667792; margin: 6px 0 0; }
+.group-weekly-date { padding: 0 4px; margin: 0 0 12px; line-height: 1.5; }
+.group-no-data p, .group-explanation { margin: 0; font-size: 12px; line-height: 1.6; color: #667792; }
+.group-no-data h2 { margin-bottom: 10px; font-size: 15px; }
+.group-explanation { padding-inline: 4px; font-size: 10px; }
+.group-metric-section button:focus-visible { outline: 2px solid #0651bb; outline-offset: 3px; }
+@media (max-width:359px) { .group-overview-cards { margin-inline: 12px; } .group-overview-heading { padding-inline: 16px; } .group-mean-grid { gap: 12px; } }

@@ -20,6 +20,6 @@ export function RealAdminWorkbench({session,profile,onPasswordChange}:{session:S
  const source=useMemo(()=>data?liveDashboardSource(data):null,[data]);
  if(!data||!source)return <main className="sec-access-shell"><div className="sec-access-card"><h1>Verwaltung</h1><p role="status">{error||'Veröffentlichte Daten werden geladen…'}</p>{error&&<button onClick={()=>void refresh().catch(e=>setError(e.message))}>Erneut versuchen</button>}</div></main>;
  const departments=profile.role==='app_admin'?SEC_GROUPS.map(g=>g.id):profile.department_ids;
- const remote:AdminRemote={source,configs:configVersions(data),imports:importVersions(data),departments,request,refresh,accounts:<AdminAccounts request={request} refresh={refresh} accounts={accounts} data={data} profile={profile}/>,privacy:<AdminPrivacy request={request} profile={profile} data={data}/>};
+ const remote:AdminRemote={source,configs:configVersions(data),imports:importVersions(data),departments,canManageRoster:profile.role==='app_admin',request,refresh,accounts:<AdminAccounts request={request} refresh={refresh} accounts={accounts} data={data} profile={profile}/>,privacy:<AdminPrivacy request={request} profile={profile} data={data}/>};
  return <>{error&&<div className="sec-refresh-error" role="status">{error}<button onClick={()=>void refresh().catch(e=>setError(e.message))}><RefreshCw size={16}/>Erneut versuchen</button></div>}<AdminWorkbench remote={remote} onPasswordChange={onPasswordChange}/></>;
 }

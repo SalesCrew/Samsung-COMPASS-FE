@@ -5,7 +5,7 @@ import { AdminSelect } from './AdminSelect';
 
 export type ImportIdentityMatch={row:number;sourceName:string;sourceExternalId:string;sourceMarket:string;personId:string|null;status:'matched'|'unresolved'|'new'|'skipped';method:string|null;score:number|null;message:string};
 export type ImportPersonOption={id:string;external_id:string;name:string;markets:string[]};
-const methods:Record<string,string>={id:'SEC-ID erkannt',name:'Name erkannt',fuzzy:'Ähnlicher Name erkannt',market:'Eindeutige Marktzuordnung',manual:'Manuell zugeordnet',new:'Neue Person bestätigt'};
+const methods:Record<string,string>={id:'SEC-ID erkannt',name:'Name erkannt',fuzzy:'Ähnlicher Name erkannt',market:'Eindeutige Marktzuordnung',roster:'Markt über die Personenliste erkannt',manual:'Manuell zugeordnet',new:'Neue Person bestätigt'};
 export function ImportIdentityReview({matches,people,choices,problems=[],onChange}:{matches:ImportIdentityMatch[];people:ImportPersonOption[];choices:Record<string,string>;problems?:ImportProblem[];onChange:(row:number,person:string)=>void}){
  const included=matches.filter(m=>m.status!=='skipped'),skipped=matches.filter(m=>m.status==='skipped');
  const open=included.filter(m=>m.status==='unresolved').length;

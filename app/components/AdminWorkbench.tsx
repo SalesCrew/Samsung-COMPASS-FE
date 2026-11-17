@@ -39,9 +39,10 @@ import './importFeedback.css';
 import { WeeklyMappingWorkspace } from './WeeklyMappingWorkspace';
 import { ImportFieldFeedback, ImportProblemList } from './ImportFeedback';
 import { contextProblems, explainImportFailure, explainImportIssue, importFieldId, mappingProblems, uniqueProblems, type ImportIssue } from '../lib/importFeedback';
+import { RosterReference } from './RosterReference';
 
 type AdminTab = 'overview' | 'analysis' | 'import' | 'configuration' | 'history' | 'accounts' | 'privacy';
-export type AdminRemote={source:LiveDashboardSource;configs:ConfigVersion[];imports:ImportVersion[];departments:SECGroup['id'][];accounts:ReactNode;privacy:ReactNode;refresh:()=>Promise<void>;request:<T>(path:string,body?:unknown,options?:RequestInit)=>Promise<T>};
+export type AdminRemote={source:LiveDashboardSource;configs:ConfigVersion[];imports:ImportVersion[];departments:SECGroup['id'][];canManageRoster?:boolean;accounts:ReactNode;privacy:ReactNode;refresh:()=>Promise<void>;request:<T>(path:string,body?:unknown,options?:RequestInit)=>Promise<T>};
 type RemoteValidation={issues:ImportIssue[];count:number;otherMonths:number;specialValues:number;skippedUnstaffed?:number;skippedManual?:number;mappings:SourceColumnMapping[];identityMatches?:ImportIdentityMatch[];people?:ImportPersonOption[]};
 const CONFIG_KEY = 'sec-admin-config-v1';
 const IMPORT_KEY = 'sec-admin-import-v2';
@@ -340,6 +341,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
           <span className={mappedColumns.length ? 'is-active' : ''}><b>3</b> Mapping</span>
           <span><b>4</b> Prüfen</span>
         </div>
+        {remote?.canManageRoster&&<RosterReference remote={remote}/>}
         <div className="admin-import-layout">
           <div className="admin-page-grid">
             <section className="admin-card admin-source-card" id={importFieldId('source')} tabIndex={-1}>

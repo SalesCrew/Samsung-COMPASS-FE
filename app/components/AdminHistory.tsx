@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRight, Download, FileSpreadsheet, Settings2 } from 'lucide-react';
+import {TargetPeriodNote} from './TargetPeriodNote';
 import { type ConfigVersion, type ImportVersion } from '../lib/admin';
 
 const phaseLabels = { TARGET_INITIALIZATION: 'Monatsstart / Targets', WEEKLY_PROGRESS: 'Weekly Progress / MTD', MONTH_FINALIZATION: 'Monatsabschluss' };
@@ -16,6 +17,7 @@ export function AdminHistory({ configs, imports, onExport, onLoad, live=false }:
         return <article key={item.id}><span className="admin-time-icon"><FileSpreadsheet size={19} /></span><div>
           <strong>{item.group} · {item.month} · {phaseLabels[item.phase]}</strong>
           <small>{new Date(item.saved).toLocaleString('de-AT')} · {item.filename} · {item.sheet}</small>
+          <TargetPeriodNote period={item.targetPeriod}/>
           <p>Aktualisiert: {item.changed.join(', ') || '—'}.<br />Übernommen: {item.carried.join(', ') || 'Keine vorherigen Teilstände'}.</p>
           <span>v{sequence.findIndex(version => version.id === item.id) + 1} im Gruppenmonat · {live?(item.status==='released'?'Veröffentlicht':'Entwurf'):item.origin === 'meeting-demo' ? 'DEMO · Beispiel-Freigabe' : 'Nur lokal gespeichert'}</span>
         </div></article>;

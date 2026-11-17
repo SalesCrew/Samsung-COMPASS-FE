@@ -1,7 +1,8 @@
 import { groupMetricBlocks, type DASetting, type MetricDefinition, type SECGroup } from './groups.ts';
+import {sameTargetPeriod,type TargetPeriod} from './targetPeriod.ts';
 import { calendarTimeline } from './monthlyClosing.ts';
 
-export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string;comments?:import('./excelComments.ts').CellComment[] };
+export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string;sourceTargetPeriod?:TargetPeriod|null;comments?:import('./excelComments.ts').CellComment[] };
 export type WeeklyTargetSnapshot = {
   id: string;
   groupId: SECGroup['id'];
@@ -9,6 +10,7 @@ export type WeeklyTargetSnapshot = {
   month: string;
   asOf: string;
   updatedAt: string;
+  targetPeriod?:TargetPeriod;
   replayAvailableOn?: string;
   sourceGroup?: 'HE'|'IM';
   metrics: readonly WeeklyTarget[];
@@ -36,7 +38,7 @@ export function currentTargets(snapshots: readonly WeeklyTargetSnapshot[], group
   if(group!=='LH'||!ordered.length)return ordered[0]??null;
   // LH sources arrive independently. Keep each metric's own dated stand; never add MTD values.
   const metrics=new Map<string,WeeklyTarget>();
-  for(const snapshot of ordered)for(const metric of snapshot.metrics)if(!metrics.has(metric.key))metrics.set(metric.key,{...metric,sourceAsOf:snapshot.asOf,sourceUpdatedAt:snapshot.updatedAt});
+  for(const snapshot of ordered)for(const metric of snapshot.metrics)if(!metrics.has(metric.key))metrics.set(metric.key,{...metric,sourceAsOf:snapshot.asOf,sourceUpdatedAt:snapshot.updatedAt,sourceTargetPeriod:snapshot.targetPeriod??null});
   return {...ordered[0],metrics:[...metrics.values()].sort((a,b)=>a.key.startsWith('he-')===b.key.startsWith('he-')?0:a.key.startsWith('he-')?-1:1)};
 }
 
@@ -57,11 +59,11 @@ export function targetProgressHistory(snapshots: readonly WeeklyTargetSnapshot[]
   if(!ordered.some(s=>s.metrics.some(m=>m.key===key)))return[];
   return ordered.flatMap(snapshot => {
     const metric = snapshot.metrics.find(metric => metric.key === key);
-    return [{ asOf: snapshot.asOf, updatedAt: snapshot.updatedAt, actual: metric?.actual??null, target: metric?.target??null, unit:metric?.unit??null, achievement: metric?targetAchievement(metric.actual, metric.target):null }];
+    return [{ asOf: snapshot.asOf, updatedAt: snapshot.updatedAt, targetPeriod:snapshot.targetPeriod, actual: metric?.actual??null, target: metric?.target??null, unit:metric?.unit??null, achievement: metric?targetAchievement(metric.actual, metric.target):null }];
   }).map((stand, index, history) => {
     const previous = history[index - 1];
     // Compare adjacent cumulative stands, never a missing basis or an older month.
-    const difference = stand.unit===previous?.unit && stand.actual !== null && previous?.actual != null
+    const difference = sameTargetPeriod(stand.targetPeriod,previous?.targetPeriod) && stand.unit===previous?.unit && stand.actual !== null && previous?.actual != null
       && Number.isFinite(stand.actual) && Number.isFinite(previous.actual)
       ? Math.round((stand.actual - previous.actual) * 10) / 10 : null;
     return { ...stand, change: difference !== null && Number.isFinite(difference) ? difference || 0 : null, previousAsOf: previous?.asOf ?? null };

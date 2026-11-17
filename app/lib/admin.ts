@@ -18,6 +18,7 @@ export type SourceColumnMapping = {
   required: boolean;
 };
 export type ImportVersion = {
+  targetPeriod?:import('./targetPeriod').TargetPeriod;
   id: string;
   origin?: 'meeting-demo' | 'local';
   filename: string;

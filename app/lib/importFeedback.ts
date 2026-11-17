@@ -1,3 +1,4 @@
+import {readTargetPeriod,validISODate} from './targetPeriod.ts';
 import type { AdminMetric, ImportPhase, SheetPreview, SourceColumnMapping } from './admin.ts';
 import { closingDefinitions, closingMappings } from './closingImport.ts';
 import type { SECGroup } from './groups.ts';
@@ -60,6 +61,7 @@ export function explainImportIssue(issue: ImportIssue, ctx: FeedbackContext): Im
   const location = issue.row > 0 ? `${ctx.sheet?.name ? `Blatt „${ctx.sheet.name}“ · ` : ''}${issue.column ? `Zelle ${issue.column}${issue.row}` : `Excel-Zeile ${issue.row}`}` : undefined;
   const result = (title: string, solution: string, nextTarget = target): ImportProblem => ({ title, solution, target: nextTarget, location });
   if (/Pflichtzuordnung fehlt/.test(msg)) return result(`${label}: Excel-Spalte fehlt.`, `Wähle in diesem Feld die Excel-Spalte für „${label}“. Fehlt sie in der Datei, ergänze sie in Excel, speichere die Datei und wähle sie erneut aus.`);
+  if (/Kampagnenmonat/.test(msg)) return result('Der Berichtsmonat passt nicht zum Zielmonat der Datei.', 'Wähle den im Dateikopf genannten Zielmonat. Der Zielzeitraum darf über Monatsgrenzen gehen; der Datenstand bleibt das tatsächliche Erfassungsdatum.', 'month');
   if (/EDI-Zeitraum/.test(msg)) return /Monat/.test(msg) ? result('Der Berichtsmonat passt nicht zur Datei.', 'Wähle unter „Berichtsmonat“ den Monat aus dem EDI-Zeitraum im Kopf der Excel-Datei. Prüfe danach die Daten erneut.', 'month') : result('Der Datenstand passt nicht zur Datei.', 'Wähle unter „Datenstand“ das Enddatum des EDI-Zeitraums im Kopf der Excel-Datei. Prüfe danach die Daten erneut.', 'asOf');
   if (/Wochenliste darf|Pivot Liste ist ein Monatsabschluss/.test(msg)) return result('Datei und Importphase passen nicht zusammen.', 'Für eine Wochenliste wähle „Weekly Progress“, für eine reine Zielbasis „Monatsstart · Targets“. Für einen Monatsabschluss wähle das Blatt „Pivot Liste“ und die Phase „Monatsabschluss“.', 'phase');
   if (/Targetbasis enthält/.test(msg)) return result('Die Datei enthält bereits verkaufte Mengen oder andere Istwerte.', 'Wähle die Phase „Weekly Progress“, wenn du den Wochenstand importieren möchtest. Für eine reine Zielbasis verwende eine Datei ohne Istwerte.', 'phase');
@@ -86,8 +88,19 @@ export function contextProblems(month: string, asOf: string, phase: ImportPhase,
   return problems;
 }
 
+
+export function targetPeriodProblems(from:string,through:string,month:string):ImportProblem[]{
+ if(!from&&!through)return[];
+ const problems:ImportProblem[]=[];
+ if(!validISODate(from))problems.push({title:'Der Beginn des Zielzeitraums fehlt oder ist ungültig.',solution:'Wähle unter „Zielzeitraum von“ das erste Datum, für das die Monatsziele gelten.',target:'targetFrom'});
+ if(!validISODate(through))problems.push({title:'Das Ende des Zielzeitraums fehlt oder ist ungültig.',solution:'Wähle unter „Zielzeitraum bis“ das letzte Datum, für das die Monatsziele gelten.',target:'targetThrough'});
+ if(!problems.length&&!readTargetPeriod({from,through},month))problems.push({title:from>through?'Das Ende liegt vor dem Beginn.':'Zielzeitraum und Berichtsmonat passen nicht zusammen.',solution:'Prüfe beide Daten. Der Zeitraum muss den Berichtsmonat berühren; er darf über Monats- und Jahresgrenzen gehen.',target:'targetThrough'});
+ return problems;
+}
+
 export function explainImportFailure(message: string): ImportProblem {
   const problem = (title: string, solution: string, target = 'source') => ({ title, solution, target });
+  if(/Zielzeitraum/i.test(message))return problem('Der Zielzeitraum ist noch nicht vollständig.', 'Wähle Beginn und Ende des Zielzeitraums. Das Ende darf nicht vor dem Beginn liegen; der Zeitraum muss den Berichtsmonat berühren.', 'targetThrough');
   if (/abgelaufen.*Datei|Importvorschau.*abgelaufen/.test(message)) return problem('Die Dateivorschau ist abgelaufen.', 'Wähle dieselbe Excel-Datei oben erneut aus. Die Vorschau ist nach 20 Minuten oder einem Serverneustart nicht mehr verfügbar. Prüfe danach die Zuordnung erneut.');
   if (/Arbeitsblatt fehlt/.test(message)) return problem('Es ist kein gültiges Arbeitsblatt ausgewählt.', 'Wähle oben unter „Arbeitsblatt“ das Blatt mit den Importdaten. Für Monatsabschlüsse verwende „Pivot Liste“.', 'sheet');
   if (/Obergruppe|Konfiguration passt/.test(message)) return problem('Die Obergruppe oder Zuordnung passt nicht zur Datei.', 'Wähle die Division aus der Excel-Datei, z. B. HE oder IM. Prüfe bei HA / DA auch das DA-Setting. Prüfe die Daten danach erneut.', 'group');

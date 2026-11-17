@@ -38,7 +38,7 @@ import './admin.css';
 import './importFeedback.css';
 import { WeeklyMappingWorkspace } from './WeeklyMappingWorkspace';
 import { ImportFieldFeedback, ImportProblemList } from './ImportFeedback';
-import { contextProblems, explainImportFailure, explainImportIssue, importFieldId, mappingProblems, uniqueProblems, type ImportIssue } from '../lib/importFeedback';
+import { contextProblems, targetPeriodProblems, explainImportFailure, explainImportIssue, importFieldId, mappingProblems, uniqueProblems, type ImportIssue } from '../lib/importFeedback';
 import { RosterReference } from './RosterReference';
 import {ImportStaffingProgressPanel} from './ImportStaffingProgress';
 
@@ -88,6 +88,8 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const [error, setError] = useState('');
   const [readingFile, setReadingFile] = useState(false);
   const [previewId,setPreviewId]=useState('');
+  const [targetFrom,setTargetFrom]=useState('');
+  const [targetThrough,setTargetThrough]=useState('');
   const [asOf,setAsOf]=useState(localDate());
   const [remoteCheck,setRemoteCheck]=useState<RemoteValidation|null>(null);
   const [personMatches,setPersonMatches]=useState<ImportPersonChoices>({});
@@ -140,18 +142,20 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
     if (!next) return;
     const request = ++fileRead.current;
     setReadingFile(true);
-    setRemoteCheck(null); setCheckedSignature(''); setPreviewId(''); setStaged('');
+    setRemoteCheck(null); setCheckedSignature(''); setPreviewId(''); setStaged('');setTargetFrom('');setTargetThrough('');
     setFile(next); setDemoSource(false); setSheets([]); setSheetName(''); setError(''); setNotice(''); setColumnMappings([]);
     try {
       if(remote){
-        const result=await remote.request<{previewId:string;detectedGroup:SECGroup['id']|null;preferredSheet:string;sourceMonths:string[];sourceAsOf:string|null;sheets:SheetPreview[]}>('/imports/preview',undefined,{method:'POST',headers:{'Content-Type':'application/octet-stream','X-File-Name':encodeURIComponent(next.name)},body:next});
+        const result=await remote.request<{previewId:string;detectedGroup:SECGroup['id']|null;preferredSheet:string;sourceMonths:string[];sourceAsOf:string|null;sourceTargetPeriod?:{from:string;through:string}|null;sheets:SheetPreview[]}>('/imports/preview',undefined,{method:'POST',headers:{'Content-Type':'application/octet-stream','X-File-Name':encodeURIComponent(next.name)},body:next});
         if(request!==fileRead.current)return;
         const nextGroup=result.detectedGroup??remote.departments[0];const nextSetting=nextGroup==='DA'?importSetting:'full';const chosen=result.sheets.find(v=>v.name===result.preferredSheet)!;
         const month=result.sourceMonths.at(-1)??new Date().toISOString().slice(0,7);const date=result.sourceAsOf??month+'-'+new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate();
         const nextPhase=isPivotSheet(chosen.name)?'MONTH_FINALIZATION':'WEEKLY_PROGRESS';
+        const targetPeriod=nextPhase==='MONTH_FINALIZATION'?undefined:result.sourceTargetPeriod??undefined;
+        setTargetFrom(targetPeriod?.from??'');setTargetThrough(targetPeriod?.through??'');
         setPreviewId(result.previewId);setPersonMatches({});setSheets(result.sheets);setSheetName(chosen.name);setImportGroup(nextGroup);setImportSetting(nextSetting);setImportMonth(month);setAsOf(date);setPhase(nextPhase);setSubtype(nextPhase==='MONTH_FINALIZATION'?'Monthly Closing':'Progress-Tracker');
-        const checked=await remote.request<RemoteValidation>('/imports/'+result.previewId+'/validate',{group:nextGroup,setting:nextSetting,month,asOf:date,phase:nextPhase,sheet:chosen.name});
-        if(request!==fileRead.current)return;setColumnMappings(checked.mappings);setRemoteCheck(checked);setCheckedSignature(JSON.stringify([result.previewId,nextGroup,nextSetting,month,date,nextPhase,chosen.name,checked.mappings,{}]));setStaged('');return;
+        const checked=await remote.request<RemoteValidation>('/imports/'+result.previewId+'/validate',{group:nextGroup,setting:nextSetting,month,asOf:date,phase:nextPhase,sheet:chosen.name,...(targetPeriod?{targetPeriod}:{})});
+        if(request!==fileRead.current)return;setColumnMappings(checked.mappings);setRemoteCheck(checked);setCheckedSignature(JSON.stringify([result.previewId,nextGroup,nextSetting,month,date,nextPhase,chosen.name,checked.mappings,{},targetPeriod??null]));setStaged('');return;
       }
       const parsed = await inspectWorkbook(next);
       if (request !== fileRead.current) return;
@@ -230,9 +234,10 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
     if (!splitCategories.length) return 'Wähle mindestens eine Kategorie für den Datensatz-Split.';
     return '';
   }
-  const remoteSignature=JSON.stringify([previewId,importGroup,importSetting,importMonth,asOf,phase,sheetName,columnMappings,personMatches]);
+  const targetPeriod=phase!=='MONTH_FINALIZATION'&&(targetFrom||targetThrough)?{from:targetFrom,through:targetThrough}:undefined;
+  const remoteSignature=JSON.stringify([previewId,importGroup,importSetting,importMonth,asOf,phase,sheetName,columnMappings,personMatches,targetPeriod??null]);
   const[checkedSignature,setCheckedSignature]=useState('');
-  function remoteContext(){return{group:importGroup,setting:importSetting,month:importMonth,asOf,phase,sheet:sheetName,mappings:columnMappings,personMatches};}
+  function remoteContext(){return{group:importGroup,setting:importSetting,month:importMonth,asOf,phase,sheet:sheetName,mappings:columnMappings,personMatches,...(targetPeriod?{targetPeriod}:{})};}
   const currentCheck = remoteCheck && checkedSignature === remoteSignature ? remoteCheck : null;
   const peopleScopeCurrent=!remoteCheck?.personSelection||(remoteCheck.personSelection.group===importGroup&&remoteCheck.personSelection.setting===importSetting&&remoteCheck.personSelection.month===importMonth&&remoteCheck.personSelection.phase===phase);
   const feedbackContext = { sheet: selectedSheet, mappings: columnMappings, metrics: importMetrics };
@@ -241,6 +246,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const validationProblems = uniqueProblems([
     ...localMappingProblems,
     ...(remote && selectedSheet ? contextProblems(importMonth, asOf, phase, selectedSheet) : []),
+    ...(remote&&phase!=='MONTH_FINALIZATION'?targetPeriodProblems(targetFrom,targetThrough,importMonth):[]),
     ...(currentCheck?.issues ?? closingPreview?.issues ?? []).filter(issue => !(localMappingProblems.length && issue.row === 0 && /Pflichtzuordnung|Pflichtfelder|Spaltenkonflikt|Quellspalte|Spalte wählen|Importziel/.test(issue.message))).map(issue => explainImportIssue(issue, feedbackContext)),
     ...(currentCheck && !currentCheck.count && !currentCheck.issues.length && ((currentCheck.skippedUnstaffed??0)+(currentCheck.skippedManual??0)>0) ? [{ title: 'Alle Datenzeilen werden übersprungen.', solution: 'Es bleibt keine Person zum Importieren übrig. Prüfe die übersprungenen Zeilen unter „Personen zuordnen“. Falls eine Zeile doch besetzt ist, wähle dort die richtige Person und prüfe die Daten erneut.', target: 'people' }] : []),
     ...(currentCheck && !currentCheck.count && !currentCheck.issues.length && !((currentCheck.skippedUnstaffed??0)+(currentCheck.skippedManual??0)) ? [{ title: 'Für diesen Monat wurden keine Datensätze gefunden.', solution: `Prüfe Berichtsmonat und Arbeitsblatt. ${currentCheck.otherMonths ? `${currentCheck.otherMonths} Zeilen gehören zu anderen Monaten. ` : ''}Enthält die Datei nur Überschriften, ergänze zuerst die Daten in Excel und wähle die Datei erneut aus.`, target: 'month' }] : []),
@@ -379,6 +385,10 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
                   resetImportModel('DA', next);
                 }} options={DA_SETTINGS.map(item => ({ value: item.value, label: item.label }))} /></label> : null}
                 {remote&&<label id={importFieldId('asOf')}>Datenstand<AdminDatePicker ariaLabel="Datenstand" value={asOf} onChange={setAsOf}/><ImportFieldFeedback problems={importProblems} field="asOf" /></label>}
+                {remote&&phase!=='MONTH_FINALIZATION'&&<>
+                  <label id={importFieldId('targetFrom')}>Zielzeitraum von<AdminDatePicker allowEmpty ariaLabel="Zielzeitraum von" value={targetFrom} onChange={setTargetFrom}/><ImportFieldFeedback problems={importProblems} field="targetFrom"/></label>
+                  <label id={importFieldId('targetThrough')}>Zielzeitraum bis<AdminDatePicker allowEmpty ariaLabel="Zielzeitraum bis" value={targetThrough} onChange={setTargetThrough}/><small className="admin-muted">Gültigkeit der Ziele, unabhängig vom Datenstand. Beide Felder leer lassen, wenn der Zeitraum nicht bekannt ist.</small><ImportFieldFeedback problems={importProblems} field="targetThrough"/></label>
+                </>}
                 <label id={importFieldId('month')}>Berichtsmonat<AdminMonthPicker value={importMonth} onChange={setImportMonth} ariaLabel="Berichtsmonat" /><ImportFieldFeedback problems={importProblems} field="month" /></label>
                 <label id={importFieldId('phase')}>Phase<AdminSelect ariaLabel="Phase" value={phase} onChange={value => {
                   const next = value as ImportPhase;

@@ -40,10 +40,11 @@ export function AdminMonthPicker({ value, onChange, ariaLabel, min, max }: {
   return <AdminSelect ariaLabel={ariaLabel} searchable value={value} onChange={onChange} options={options} />;
 }
 
-export function AdminDatePicker({ value, onChange, ariaLabel }: {
+export function AdminDatePicker({ value, onChange, ariaLabel, allowEmpty=false }: {
   value: string;
   onChange: (value: string) => void;
   ariaLabel: string;
+  allowEmpty?:boolean;
 }) {
   const id = useId().replace(/:/g, '');
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -108,7 +109,7 @@ export function AdminDatePicker({ value, onChange, ariaLabel }: {
         if (!open) { const day = parseDay(value); setView({ year: day.getFullYear(), month: day.getMonth() }); }
         setOpen(current => !current);
       }}
-    ><span>{dateName.format(selected)}</span><span className="admin-date-trigger-icons"><CalendarDays size={15} /><ChevronDown size={14} /></span></button>
+    ><span>{allowEmpty&&!value?'Datum wählen':dateName.format(selected)}</span><span className="admin-date-trigger-icons"><CalendarDays size={15} /><ChevronDown size={14} /></span></button>
     {open && typeof document !== 'undefined' ? createPortal(
       <div
         ref={panelRef}
@@ -133,6 +134,7 @@ export function AdminDatePicker({ value, onChange, ariaLabel }: {
           >{day}</button>)}
         </div>
         <button type="button" className="admin-date-today" onClick={() => { onChange(dayValue(new Date())); setOpen(false); triggerRef.current?.focus(); }}>Heute wählen</button>
+        {allowEmpty&&value&&<button type="button" className="admin-date-today" onClick={()=>{onChange('');setOpen(false);triggerRef.current?.focus();}}>Datum entfernen</button>}
       </div>, document.body,
     ) : null}
   </>;

@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, ClipboardCheck, Euro, Headphones, House, Monitor, Refrigerator, Smartphone, Speaker, Tablet, WashingMachine, Watch, Wind } from 'lucide-react';
 import {isProjectAssessment} from '../lib/projectAssessment';
+import {visibleSoftbonus} from '../lib/personalSoftbonus';
 import { activeReports, monthName, previousMonth, publicationDate, type ClosingMetric, type MonthlyReport } from '../lib/monthlyClosing';
 
 const ICONS = { tv: Monitor, speaker: Speaker, euro: Euro, home: House, phone: Smartphone, watch: Watch, tablet: Tablet, headphones: Headphones, laundry: WashingMachine, fridge: Refrigerator, vacuum: Wind, check: ClipboardCheck };
@@ -10,7 +11,7 @@ const number = (n: number) => n.toLocaleString('de-AT', { maximumFractionDigits:
 const weight = (n: number | null) => n === null ? 'Gewicht offen' : n === 100/3 ? '⅓ Gewicht' : number(n)+'% Gewicht';
 const result = (m: ClosingMetric) => m.resultState === 'invalid' ? 'Wert nicht verfügbar' : m.achievement === null ? 'Noch kein Wert' : number(m.achievement)+'%';
 
-export function ClosingMetricExplorer({ title, note, metrics, report, reports, kind = 'kpi', comparison = true, id }: {
+export function ClosingMetricExplorer({ title, note, metrics: suppliedMetrics, report, reports, kind = 'kpi', comparison = true, id }: {
   title: string; note: string; metrics: readonly ClosingMetric[]; report: MonthlyReport; reports: readonly MonthlyReport[];
   kind?: 'kpi' | 'criteria'; comparison?: boolean; id?: string;
 }) {
@@ -18,9 +19,10 @@ export function ClosingMetricExplorer({ title, note, metrics, report, reports, k
   const [selected, setSelected] = useState<string | null>(null);
   const overview = useRef<HTMLDivElement>(null);
   const back = useRef<HTMLButtonElement>(null);
+  const metrics = kind === 'criteria' ? visibleSoftbonus(suppliedMetrics,report.groupId) : suppliedMetrics;
   const detail = metrics.find(m => m.key === selected) ?? null;
   const prior = comparison ? activeReports(reports).find(r => r.month === previousMonth(report.month) && r.configurationVersion === report.configurationVersion) : undefined;
-  const previous = prior && (kind === 'criteria' ? prior.qualitative : prior.metrics).find(m => m.key === selected);
+  const previous = prior && (kind === 'criteria' ? visibleSoftbonus(prior.qualitative,prior.groupId) : prior.metrics.filter(m=>m.resultState!=='not-applicable')).find(m => m.key === selected);
   const delta = detail?.achievement !== null && detail?.achievement !== undefined && previous?.achievement !== null && previous?.achievement !== undefined ? Math.round((detail.achievement-previous.achievement)*10)/10 : null;
   function open(key: string) { setSelected(key); requestAnimationFrame(()=>back.current?.focus({preventScroll:true})); }
   function close() {
@@ -50,8 +52,8 @@ export function ClosingMetricExplorer({ title, note, metrics, report, reports, k
         {m.actual !== null && m.target !== null ? <span className="closing-metric-ratio">Ist {number(m.actual)} <span>/</span> Ziel {number(m.target)} {m.unit}</span> : <span className="closing-metric-ratio">{m.achievement===null?'Ergebnis ausstehend':'Monatsabschluss'}</span>}
         <small>{weight(m.weight)}</small>
       </button>)}</div>
-      {!metrics.length && <p className="closing-metric-note">Keine passenden {kind==='criteria'?'Kriterien':'KPIs'} für diesen Fokus.</p>}
-      <p className="closing-metric-hint">{kind==='criteria'?'Kriterium':'KPI'} antippen, um Details anzuzeigen</p>
+      {!metrics.length && <p className="closing-metric-note">{kind==='criteria'?'Für dich sind in diesem Monatsabschluss keine zutreffenden Kriterien enthalten.':'Keine passenden KPIs für diesen Fokus.'}</p>}
+      {!!metrics.length && <p className="closing-metric-hint">{kind==='criteria'?'Kriterium':'KPI'} antippen, um Details anzuzeigen</p>}
     </>}
   </section>;
 }

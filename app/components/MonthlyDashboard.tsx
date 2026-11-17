@@ -48,7 +48,9 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, premium
     <section className="configured-month-section" id={group.id+'-section-monthly'} aria-labelledby={group.id+'-monthly-title'}>
       <header className="monthly-section-heading"><h2 id={group.id+'-monthly-title'}>{isST ? 'Qualitative Monatsdetails' : 'Monatsdetails'}</h2><p>{monthName(report.month)} · Monatsabschluss</p></header>
       {blocks.map((block,index) => {
-        const metrics = report.metrics.filter(m => block.metrics.some(b => b.key === m.key) && m.resultState !== 'not-applicable' && (filters.kpi === 'all' || filters.kpi === m.key || filters.kpi === 'below' && m.achievement !== null && m.achievement < 100));
+        // ST uses the qualitative explorer here. Keep its source pair intact so
+        // the explorer can distinguish next month's assessment from nonparticipation.
+        const metrics = report.metrics.filter(m => block.metrics.some(b => b.key === m.key) && (isST || m.resultState !== 'not-applicable') && (filters.kpi === 'all' || filters.kpi === m.key || filters.kpi === 'below' && m.achievement !== null && m.achievement < 100));
         return <ClosingMetricExplorer key={report.publicationId+'-'+block.label+'-'+filters.kpi} title={group.id==='HE'||group.id==='IM'?'Deine KPIs':block.label} note={block.note} metrics={metrics} report={report} reports={reports} comparison={filters.comparison!=='none'} kind={isST?'criteria':'kpi'} id={isST && index === 0 ? group.id+'-section-category' : undefined}/>;
       })}
       {group.id === 'DA' && report.setting !== 'laundry-ref' && <p className="monthly-stretch-note">VC-Stretch gilt bei mehr als 150%. Betrag und Berechnung sind offen; freigegebene Zusatzprämien stehen separat im Monatsbericht.</p>}

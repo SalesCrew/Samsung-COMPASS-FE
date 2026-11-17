@@ -1,0 +1,5 @@
+.assessment-schedule { margin-top:calc(24px * var(--sec-ui-scale,1)); padding-top:calc(22px * var(--sec-ui-scale,1)); border-top:1px solid var(--sec-border); }
+.assessment-schedule > div:first-child { display:grid; gap:calc(5px * var(--sec-ui-scale,1)); }
+.assessment-schedule strong { color:var(--sec-text); font-size:max(var(--sec-min-font,0px),calc(23px * var(--sec-ui-scale,1))); font-weight:500; line-height:1.4; }
+.assessment-schedule span { color:var(--sec-copy-muted,var(--sec-muted)); font-size:max(var(--sec-min-font,0px),calc(21px * var(--sec-ui-scale,1))); line-height:1.5; overflow-wrap:anywhere; }
+.assessment-schedule .source-comments { margin-top:calc(12px * var(--sec-ui-scale,1)); }

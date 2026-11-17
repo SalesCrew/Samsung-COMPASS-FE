@@ -3,7 +3,8 @@
 import { useId, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, ClipboardCheck, Euro, Headphones, House, Monitor, Refrigerator, Smartphone, Speaker, Tablet, WashingMachine, Watch, Wind } from 'lucide-react';
 import {isProjectAssessment} from '../lib/projectAssessment';
-import {visibleSoftbonus} from '../lib/personalSoftbonus';
+import {scheduledSoftbonus,assessmentKind} from '../lib/assessmentSchedule';
+import {AssessmentScheduleNote} from './AssessmentScheduleNote';
 import {SourceComments} from './SourceComments';
 import { activeReports, monthName, previousMonth, publicationDate, type ClosingMetric, type MonthlyReport } from '../lib/monthlyClosing';
 
@@ -20,11 +21,13 @@ export function ClosingMetricExplorer({ title, note, metrics: suppliedMetrics, r
   const [selected, setSelected] = useState<string | null>(null);
   const overview = useRef<HTMLDivElement>(null);
   const back = useRef<HTMLButtonElement>(null);
-  const metrics = kind === 'criteria' ? visibleSoftbonus(suppliedMetrics,report.groupId) : suppliedMetrics;
+  const schedule = kind === 'criteria' ? scheduledSoftbonus(suppliedMetrics,report.groupId,report.month) : {metrics:suppliedMetrics,next:null};
+  const metrics = schedule.metrics;
   const detail = metrics.find(m => m.key === selected) ?? null;
   const prior = comparison ? activeReports(reports).find(r => r.month === previousMonth(report.month) && r.configurationVersion === report.configurationVersion) : undefined;
-  const previous = prior && (kind === 'criteria' ? visibleSoftbonus(prior.qualitative,prior.groupId) : prior.metrics.filter(m=>m.resultState!=='not-applicable')).find(m => m.key === selected);
-  const delta = detail?.achievement !== null && detail?.achievement !== undefined && previous?.achievement !== null && previous?.achievement !== undefined ? Math.round((detail.achievement-previous.achievement)*10)/10 : null;
+  const previous = prior && (kind === 'criteria' ? scheduledSoftbonus(prior.qualitative,prior.groupId,prior.month).metrics : prior.metrics.filter(m=>m.resultState!=='not-applicable')).find(m => m.key === selected);
+  const differentAssessment = detail && previous && kind==='criteria' && assessmentKind(detail)!==assessmentKind(previous);
+  const delta = !differentAssessment && detail?.achievement !== null && detail?.achievement !== undefined && previous?.achievement !== null && previous?.achievement !== undefined ? Math.round((detail.achievement-previous.achievement)*10)/10 : null;
   function open(key: string) { setSelected(key); requestAnimationFrame(()=>back.current?.focus({preventScroll:true})); }
   function close() {
     const key = selected;
@@ -57,5 +60,6 @@ export function ClosingMetricExplorer({ title, note, metrics: suppliedMetrics, r
       {!metrics.length && <p className="closing-metric-note">{kind==='criteria'?'Für dich sind in diesem Monatsabschluss keine zutreffenden Kriterien enthalten.':'Keine passenden KPIs für diesen Fokus.'}</p>}
       {!!metrics.length && <p className="closing-metric-hint">{kind==='criteria'?'Kriterium':'KPI'} antippen, um Details anzuzeigen</p>}
     </>}
+    {schedule.next&&(!detail||detail.key===schedule.next.currentKey)&&<AssessmentScheduleNote next={schedule.next}/>}
   </section>;
 }

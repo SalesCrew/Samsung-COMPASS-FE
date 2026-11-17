@@ -1,7 +1,7 @@
 import { groupMetricBlocks, type DASetting, type MetricDefinition, type SECGroup } from './groups.ts';
 import { calendarTimeline } from './monthlyClosing.ts';
 
-export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null };
+export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string };
 export type WeeklyTargetSnapshot = {
   id: string;
   groupId: SECGroup['id'];
@@ -10,8 +10,16 @@ export type WeeklyTargetSnapshot = {
   asOf: string;
   updatedAt: string;
   replayAvailableOn?: string;
+  sourceGroup?: 'HE'|'IM';
   metrics: readonly WeeklyTarget[];
 };
+
+/** Each independently delivered LH block has its own active revision at a dated stand. */
+export function activeWeeklyRows<T extends {assignment_id:string;month:string;revision:number;as_of?:string;payload:{sourceGroup?:string}}>(rows:readonly T[]):T[]{
+ const active=new Map<string,T>();
+ for(const row of rows){const key=[row.assignment_id,row.month,row.as_of,row.payload.sourceGroup??'full'].join('|');const old=active.get(key);if(!old||row.revision>old.revision)active.set(key,row);}
+ return [...active.values()];
+}
 
 /** Weekly deliveries replace the cumulative month-to-date snapshot; never sum them. */
 function deliveredTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SECGroup['id'], setting: DASetting, calendarDay: string) {
@@ -23,8 +31,13 @@ function deliveredTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SEC
 }
 
 export function currentTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SECGroup['id'], setting: DASetting, calendarDay: string) {
-  return deliveredTargets(snapshots, group, setting, calendarDay)
-    .sort((a, b) => b.asOf.localeCompare(a.asOf) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt))[0] ?? null;
+  const ordered=deliveredTargets(snapshots, group, setting, calendarDay)
+    .sort((a, b) => b.asOf.localeCompare(a.asOf) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  if(group!=='LH'||!ordered.length)return ordered[0]??null;
+  // LH sources arrive independently. Keep each metric's own dated stand; never add MTD values.
+  const metrics=new Map<string,WeeklyTarget>();
+  for(const snapshot of ordered)for(const metric of snapshot.metrics)if(!metrics.has(metric.key))metrics.set(metric.key,{...metric,sourceAsOf:snapshot.asOf,sourceUpdatedAt:snapshot.updatedAt});
+  return {...ordered[0],metrics:[...metrics.values()].sort((a,b)=>a.key.startsWith('he-')===b.key.startsWith('he-')?0:a.key.startsWith('he-')?-1:1)};
 }
 
 export function targetAchievement(actual: number | null, target: number | null) {
@@ -36,6 +49,7 @@ export function targetAchievement(actual: number | null, target: number | null) 
 export function targetProgressHistory(snapshots: readonly WeeklyTargetSnapshot[], group: SECGroup['id'], setting: DASetting, calendarDay: string, key: string) {
   const dates = new Map<string, WeeklyTargetSnapshot>();
   for (const snapshot of deliveredTargets(snapshots, group, setting, calendarDay)) {
+    if(group==='LH'&&!snapshot.metrics.some(m=>m.key===key))continue;
     const existing = dates.get(snapshot.asOf);
     if (!existing || Date.parse(snapshot.updatedAt) > Date.parse(existing.updatedAt)) dates.set(snapshot.asOf, snapshot);
   }

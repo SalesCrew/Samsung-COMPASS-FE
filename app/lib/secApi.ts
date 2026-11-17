@@ -4,7 +4,7 @@ import { sessionFetch, SessionUnavailable } from './sessionTransport';
 import type { DASetting, SECGroup } from './groups';
 import {groupProjectAssessment} from './projectAssessment';
 import type { MonthlyReport, PointHistoryEntry, PremiumHistoryEntry } from './monthlyClosing';
-import type { WeeklyTargetSnapshot } from './weeklyTargets';
+import { activeWeeklyRows, type WeeklyTargetSnapshot } from './weeklyTargets';
 
 export type SECAccount={user_id:string;email:string;display_name:string;role:'app_admin'|'department_admin'|'sec'|'supervisor';department_ids:SECGroup['id'][];person_id:string|null;primary_department:SECGroup['id']|null;setting:DASetting;active:boolean;must_change_password:boolean;is_test:boolean;notice_version:string|null};
 export type PublishedRow={id:string;person_id:string;assignment_id:string;department_id:SECGroup['id'];month:string;revision:number;published_at:string;import_id:string;payload:MonthlyReport & WeeklyTargetSnapshot};
@@ -43,8 +43,6 @@ export function reportFromRow(row:PublishedRow):MonthlyReport{
  return{...row.payload,qualitative:groupProjectAssessment(row.payload.qualitative),extrasAvailable:row.payload.extrasAvailable??(row.payload.extras.length>0||['LH','ST'].includes(row.department_id)),reportId:row.assignment_id+'-'+row.month.slice(0,7),publicationId:row.id,revision:row.revision,groupId:row.department_id,month:row.month.slice(0,7),publishedAt:row.published_at};
 }
 export function weeklyFromRows(rows:PublishedRow[],testReplay=false):WeeklyTargetSnapshot[]{
- const active=new Map<string,PublishedRow>();
- for(const row of rows){const asOf=(row as PublishedRow & {as_of:string}).as_of;const key=row.assignment_id+'|'+row.month+'|'+asOf;const old=active.get(key);if(!old||row.revision>old.revision)active.set(key,row);}
- return[...active.values()].map(row=>({...row.payload,id:row.id,groupId:row.department_id,month:row.month.slice(0,7),asOf:(row as PublishedRow & {as_of:string}).as_of,updatedAt:row.published_at,...(testReplay?{replayAvailableOn:(row as PublishedRow & {as_of:string}).as_of}:{})}));
+ return activeWeeklyRows(rows).map(row=>({...row.payload,id:row.id,groupId:row.department_id,month:row.month.slice(0,7),asOf:(row as PublishedRow & {as_of:string}).as_of,updatedAt:row.published_at,...(testReplay?{replayAvailableOn:(row as PublishedRow & {as_of:string}).as_of}:{})}));
 }
 

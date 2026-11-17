@@ -13,7 +13,7 @@ export type LiveDashboardSource={
 };
 function active(rows:PublishedRow[],weekly:boolean){
  const found=new Map<string,PublishedRow>();
- for(const row of rows){const key=row.assignment_id+'|'+row.month+'|'+(weekly?(row as PublishedRow & {as_of:string}).as_of:'');const old=found.get(key);if(!old||row.revision>old.revision)found.set(key,row);}
+ for(const row of rows){const key=row.assignment_id+'|'+row.month+'|'+(weekly?(row as PublishedRow & {as_of:string}).as_of+'|'+((row.payload as typeof row.payload & {sourceGroup?:string}).sourceGroup??'full'):'');const old=found.get(key);if(!old||row.revision>old.revision)found.set(key,row);}
  return[...found.values()];
 }
 export function liveDashboardSource(data:AdminData):LiveDashboardSource{
@@ -28,7 +28,10 @@ export function liveDashboardSource(data:AdminData):LiveDashboardSource{
   results:scope=>{
    const weekly=scope.snapshot.startsWith('weekly:');
    const date=scope.snapshot.slice(7);
-   return active(weekly?data.weekly.filter(r=>(r as PublishedRow & {as_of:string}).as_of===date):data.reports,weekly)
+   const source=active(weekly?data.weekly.filter(r=>(r as PublishedRow & {as_of:string}).as_of===date):data.reports,weekly);
+   const combined=new Map<string,PublishedRow>();
+   for(const row of source){const key=row.assignment_id+'|'+row.month;if(weekly&&row.department_id==='LH'&&combined.has(key)){const previous=combined.get(key)!;combined.set(key,{...row,payload:{...row.payload,metrics:[...new Map([...previous.payload.metrics,...row.payload.metrics].map(m=>[m.key,m])).values()]}});}else combined.set(key,row);}
+   return [...combined.values()]
     .filter(r=>r.month.startsWith(scope.month)&&(scope.group==='all'||r.department_id===scope.group))
     .flatMap(r=>{
      const person=people.get(r.person_id),a=assignment.get(r.assignment_id);if(!person||!a||(scope.market!=='all'&&scope.market!==a.market))return[];

@@ -30,7 +30,7 @@ import { AdminMetricEditor } from './AdminMetricEditor';
 import { AdminHistory } from './AdminHistory';
 import { MEETING_CONFIGS, MEETING_IMPORTS, MEETING_PEOPLE, localRecords, meetingWorkbook, mergeMeetingData } from '../lib/adminDemo';
 import { AdminSelect } from './AdminSelect';
-import { ImportIdentityReview, type ImportIdentityMatch, type ImportPersonOption } from './ImportIdentityReview';
+import { ImportIdentityReview, type ImportIdentityMatch, type ImportPersonOption, type ImportPersonChoices } from './ImportIdentityReview';
 import { AdminMonthPicker, AdminDatePicker } from './AdminTemporalPicker';
 import type { DashboardScope } from '../lib/adminDashboard';
 import type { LiveDashboardSource } from '../lib/adminLiveData';
@@ -89,7 +89,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const [previewId,setPreviewId]=useState('');
   const [asOf,setAsOf]=useState(localDate());
   const [remoteCheck,setRemoteCheck]=useState<RemoteValidation|null>(null);
-  const [personMatches,setPersonMatches]=useState<Record<string,string>>({});
+  const [personMatches,setPersonMatches]=useState<ImportPersonChoices>({});
   const [staged,setStaged]=useState('');
   const [busy,setBusy]=useState(false);
   const fileRead = useRef(0);

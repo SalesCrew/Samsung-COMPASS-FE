@@ -52,7 +52,7 @@ export function ConfiguredDashboard({ group, filters, onOpenFilters, onOpenRules
   return <main className="configured-dashboard">
     <IncentiveCard group={group} month={filters.month} asOf={cutoff(filters)} />
     <div className={`configured-overview${!showLeaderboard ? ' without-leaderboard' : ''}`}>
-      {isST ? <SoftbonusOverviewCard value={hasResult ? demo.softbonus : null} month={month} criteriaCount={blocks.flatMap(block => block.metrics).length} /> : <AnnualPointsCard points={hasResult ? demo.annualPoints : null} tier={hasResult ? demo.tier : 'unavailable'} month={month} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow fullWidth={!showLeaderboard} />}
+      {isST ? <SoftbonusOverviewCard value={hasResult ? demo.softbonus : null} month={month} criteriaCount={blocks.flatMap(block => block.metrics).length} /> : <AnnualPointsCard points={hasResult ? demo.annualPoints : null} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow fullWidth={!showLeaderboard} />}
       {showLeaderboard && <LeaderboardCard pool={demo.pool} rank={hasResult ? demo.rank : null} flow />}
     </div>
 

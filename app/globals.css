@@ -1027,6 +1027,12 @@ button {
 .own-rank-result > span, .own-rank-empty > strong { color: var(--sec-text); font-size: max(var(--sec-min-font, 0px), calc(25px * var(--sec-ui-scale, 1))); line-height: 1.4; font-weight: 550; }
 .own-rank-result small, .own-rank-empty p { margin: 0; color: var(--sec-copy-muted, var(--sec-muted)); font-size: max(var(--sec-min-font, 0px), calc(20px * var(--sec-ui-scale, 1))); line-height: 1.5; }
 .own-rank-empty > svg { color: var(--sec-copy-muted, var(--sec-muted)); flex-shrink: 0; }
+.ranking-explanation { width: 100%; border-top: 1px solid var(--sec-line, #e1e7ef); padding-top: 12px; color: var(--sec-copy-muted, var(--sec-muted)); font-size: max(var(--sec-min-font, 0px), calc(18px * var(--sec-ui-scale, 1))); line-height: 1.5; text-align: left; }
+.ranking-explanation summary { color: var(--sec-blue); cursor: pointer; text-align: center; }
+.ranking-explanation p { margin: 12px 0 0; }
+.ranking-explanation dl { margin: 12px 0; }
+.ranking-explanation dl div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-top: 7px; }
+.ranking-explanation dd { margin: 0; color: var(--sec-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .chart-card {
   top: calc(1141px * var(--sec-ui-scale, 1));

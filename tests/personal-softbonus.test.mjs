@@ -1,10 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
-import ts from 'typescript';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {personalSoftbonus,visibleSoftbonus} from '../app/lib/personalSoftbonus.ts';
+import {loadComponent} from './render-component.mjs';
 import {closingFixtures} from '../app/lib/monthlyClosing.ts';
 
 const metric=(key,achievement=null,resultState='missing')=>({key,label:key,unit:'%',weight:null,icon:'check',achievement,resultState,actual:null,target:null});
@@ -36,10 +35,7 @@ test('general missing criteria, configured criteria and other divisions are neve
  assert.deepEqual(visibleSoftbonus(personalSoftbonus(input,'HE'),'HE'),visibleSoftbonus(input,'HE'));
 });
 
-const url=new URL('../app/components/ClosingMetricExplorer.tsx',import.meta.url);
-let js=ts.transpileModule(await readFile(url,'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
-js=js.replace(/from ["']([^"']+)["']/g,(_all,path)=>'from '+JSON.stringify(path.startsWith('.')?new URL(path+'.ts',url).href:import.meta.resolve(path)));
-const {ClosingMetricExplorer}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const {ClosingMetricExplorer}=await import(await loadComponent(new URL('../app/components/ClosingMetricExplorer.tsx',import.meta.url)));
 function render(metrics){const report=closingFixtures('HE').at(-1);return renderToStaticMarkup(createElement(ClosingMetricExplorer,{title:'Softbonus',note:'Gelieferte Kriterien',metrics,report,reports:[report],kind:'criteria'}));}
 test('the actual card counts only applicable criteria and retains an orange real zero and missing general result',()=>{
  const html=render([...e4y,metric('General',0,'value'),metric('Pending'),metric('Explicit NA',null,'not-applicable')]);

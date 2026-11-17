@@ -1,7 +1,7 @@
 import { groupMetricBlocks, type DASetting, type MetricDefinition, type SECGroup } from './groups.ts';
 import { calendarTimeline } from './monthlyClosing.ts';
 
-export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string };
+export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string;comments?:import('./excelComments.ts').CellComment[] };
 export type WeeklyTargetSnapshot = {
   id: string;
   groupId: SECGroup['id'];

@@ -5,7 +5,7 @@ import { groupMetricBlocks, qualitativeMetrics, performanceTier, type DASetting,
 
 export type GroupId = SECGroup['id'];
 export type ResultState = 'value' | 'missing' | 'invalid' | 'not-applicable';
-export type ClosingMetric = MetricDefinition & { resultState: ResultState; achievement: number | null; actual: number | null; target: number | null; details?:AssessmentDetail[] };
+export type ClosingMetric = MetricDefinition & { resultState: ResultState; achievement: number | null; actual: number | null; target: number | null; details?:AssessmentDetail[];comments?:import('./excelComments.ts').CellComment[] };
 export type PremiumHistoryEntry = {month:string;premium:number|null;extras:{type:string;amount:number}[];extrasAvailable?:boolean};
 export type MonthlyReport = {
   reportId: string; publicationId: string; revision: number; groupId: GroupId;

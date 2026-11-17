@@ -30,7 +30,7 @@ import { AdminMetricEditor } from './AdminMetricEditor';
 import { AdminHistory } from './AdminHistory';
 import { MEETING_CONFIGS, MEETING_IMPORTS, MEETING_PEOPLE, localRecords, meetingWorkbook, mergeMeetingData } from '../lib/adminDemo';
 import { AdminSelect } from './AdminSelect';
-import { ImportIdentityReview, type ImportIdentityMatch, type ImportPersonOption, type ImportPersonChoices } from './ImportIdentityReview';
+import { ImportIdentityReview, type ImportIdentityMatch, type ImportPersonOption, type ImportPersonChoices, type ImportPersonSelection } from './ImportIdentityReview';
 import { AdminMonthPicker, AdminDatePicker } from './AdminTemporalPicker';
 import type { DashboardScope } from '../lib/adminDashboard';
 import type { LiveDashboardSource } from '../lib/adminLiveData';
@@ -44,7 +44,7 @@ import {ImportStaffingProgressPanel} from './ImportStaffingProgress';
 
 type AdminTab = 'overview' | 'analysis' | 'import' | 'configuration' | 'history' | 'accounts' | 'privacy';
 export type AdminRemote={source:LiveDashboardSource;configs:ConfigVersion[];imports:ImportVersion[];departments:SECGroup['id'][];canManageRoster?:boolean;accounts:ReactNode;privacy:ReactNode;refresh:()=>Promise<void>;request:<T>(path:string,body?:unknown,options?:RequestInit)=>Promise<T>};
-type RemoteValidation={issues:ImportIssue[];count:number;otherMonths:number;specialValues:number;skippedUnstaffed?:number;skippedManual?:number;mappings:SourceColumnMapping[];identityMatches?:ImportIdentityMatch[];people?:ImportPersonOption[]};
+type RemoteValidation={issues:ImportIssue[];count:number;otherMonths:number;specialValues:number;skippedUnstaffed?:number;skippedManual?:number;mappings:SourceColumnMapping[];identityMatches?:ImportIdentityMatch[];people?:ImportPersonOption[];personSelection?:ImportPersonSelection};
 const CONFIG_KEY = 'sec-admin-config-v1';
 const IMPORT_KEY = 'sec-admin-import-v2';
 const INITIAL_DEMO_SOURCE = { sheet: closingTemplate('HE'), mappings: closingMappings(closingTemplate('HE'), 'HE') };
@@ -234,6 +234,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const[checkedSignature,setCheckedSignature]=useState('');
   function remoteContext(){return{group:importGroup,setting:importSetting,month:importMonth,asOf,phase,sheet:sheetName,mappings:columnMappings,personMatches};}
   const currentCheck = remoteCheck && checkedSignature === remoteSignature ? remoteCheck : null;
+  const peopleScopeCurrent=!remoteCheck?.personSelection||(remoteCheck.personSelection.group===importGroup&&remoteCheck.personSelection.setting===importSetting&&remoteCheck.personSelection.month===importMonth&&remoteCheck.personSelection.phase===phase);
   const feedbackContext = { sheet: selectedSheet, mappings: columnMappings, metrics: importMetrics };
   const sourceIsClosing = Boolean(selectedSheet && isPivotSheet(selectedSheet.name));
   const localMappingProblems = selectedSheet && (remote || closingMode) ? mappingProblems(feedbackContext, importGroup, sourceIsClosing) : [];
@@ -408,7 +409,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
                 onSplitCategoriesChange={setSplitCategories}
               />}
             </section>
-            {remote&&remoteCheck?.identityMatches&&<ImportIdentityReview matches={remoteCheck.identityMatches} people={remoteCheck.people??[]} problems={importProblems} choices={personMatches} onChange={(row,person)=>{setPersonMatches(current=>({...current,[String(row)]:person}));setStaged('');setError('');setNotice('');}}/>}
+            {remote&&remoteCheck?.identityMatches&&(peopleScopeCurrent?<ImportIdentityReview matches={remoteCheck.identityMatches} people={remoteCheck.people??[]} selection={remoteCheck.personSelection} problems={importProblems} choices={personMatches} onChange={(row,person)=>{setPersonMatches(current=>({...current,[String(row)]:person}));setStaged('');setError('');setNotice('');}}/>:<p className="admin-muted">Berichtsmonat oder Bereich geändert. Klicke auf „Daten prüfen“, um die passende Personenauswahl zu laden.</p>)}
           </div>
           <aside className="admin-side-stack admin-import-aside">
             <section className="admin-card admin-release-card">

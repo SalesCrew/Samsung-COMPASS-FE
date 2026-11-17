@@ -6,16 +6,19 @@ import {ImportStaffingSources} from './ImportStaffingProgress';
 import type {ImportStaffingProgress} from '../lib/importStaffing';
 
 export type ImportPersonChoices=Record<string,string|string[]>;
-export type ImportIdentityMatch={row:number;sourceName:string;sourceExternalId:string;sourceMarket:string;personId:string|null;status:'matched'|'unresolved'|'new'|'skipped';method:string|null;score:number|null;message:string;shared?:boolean;expectedCount?:number;targetGroup?:string;targetGroups?:string[];recipients?:{personId:string;name:string;departmentId:string;market:string}[];staffing?:ImportStaffingProgress};
+export type ImportIdentityMatch={row:number;sourceName:string;sourceExternalId:string;sourceMarket:string;personId:string|null;status:'matched'|'unresolved'|'new'|'skipped';method:string|null;score:number|null;message:string;canCreate?:boolean;shared?:boolean;expectedCount?:number;targetGroup?:string;targetGroups?:string[];recipients?:{personId:string;name:string;departmentId:string;market:string}[];staffing?:ImportStaffingProgress};
 export type ImportPersonOption={id:string;external_id:string;name:string;markets:string[];department_ids?:string[]};
+export type ImportPersonSelection={group:string;setting:string;month:string;phase:string;sourceMonth:string|null};
 const methods:Record<string,string>={id:'SEC-ID erkannt',name:'Name erkannt',fuzzy:'Ähnlicher Name erkannt',market:'Eindeutige Marktzuordnung',roster:'Markt über die Personenliste erkannt',manual:'Manuell zugeordnet',new:'Neue Person bestätigt'};
-export function ImportIdentityReview({matches,people,choices,problems=[],onChange}:{matches:ImportIdentityMatch[];people:ImportPersonOption[];choices:ImportPersonChoices;problems?:ImportProblem[];onChange:(row:number,person:string|string[])=>void}){
+export function ImportIdentityReview({matches,people,choices,selection,problems=[],onChange}:{matches:ImportIdentityMatch[];people:ImportPersonOption[];choices:ImportPersonChoices;selection?:ImportPersonSelection;problems?:ImportProblem[];onChange:(row:number,person:string|string[])=>void}){
  const included=matches.filter(m=>m.status!=='skipped'),skipped=matches.filter(m=>m.status==='skipped');
  const open=included.filter(m=>m.status==='unresolved').length;
  const recipients=included.reduce((n,m)=>n+(m.recipients?.length??(m.status==='matched'||m.status==='new'?1:0)),0);
  function rows(items:ImportIdentityMatch[]){return items.map(match=>{
-   const options=[{value:'skip',label:'Zeile überspringen',description:'Diesen Markt nicht importieren, z. B. wenn er unbesetzt ist.'},...people.map(person=>({value:person.id,label:person.name||person.external_id,description:[person.external_id,...person.markets].join(' · ')}))];
-   if(match.status!=='skipped'&&match.sourceName&&match.sourceExternalId&&match.sourceMarket&&!people.some(p=>p.external_id===match.sourceExternalId))options.push({value:'new',label:'Neue Person aus dieser Zeile anlegen',description:match.sourceName});
+   const groups=match.targetGroups?.length?match.targetGroups:selection?[selection.group]:[];
+   const candidates=people.filter(person=>!groups.length||person.department_ids?.some(g=>groups.includes(g)));
+   const options=[{value:'skip',label:'Zeile überspringen',description:'Diesen Markt nicht importieren, z. B. wenn er unbesetzt ist.'},...candidates.map(person=>({value:person.id,label:person.name||person.external_id,description:[person.external_id,...person.markets].join(' · ')}))];
+   if(match.status!=='skipped'&&match.canCreate!==false&&match.sourceName&&match.sourceExternalId&&match.sourceMarket&&!people.some(p=>p.external_id===match.sourceExternalId))options.push({value:'new',label:'Neue Person aus dieser Zeile anlegen',description:match.sourceName});
    const choice=choices[String(match.row)];
    const selected=Array.isArray(choice)?choice:match.recipients?.map(p=>p.personId)??[];
    const changed=Boolean(choice&&(Array.isArray(choice)?JSON.stringify([...choice].sort())!==JSON.stringify((match.recipients??[]).map(p=>p.personId).sort()):choice!==(match.status==='skipped'?'skip':match.personId||(match.status==='new'?'new':''))));
@@ -28,6 +31,7 @@ export function ImportIdentityReview({matches,people,choices,problems=[],onChang
   });}
  return <section className="admin-card admin-identity-review" id={importFieldId('people')} tabIndex={-1}>
   <div className="admin-section-head"><div><span className="admin-step">04 · PERSONEN</span><h2>Personen zuordnen</h2></div><span className="admin-muted">{open?`${open} offen`:`${included.length} ${included.length===1?'Marktzeile':'Marktzeilen'} · ${recipients} ${recipients===1?'Person':'Personen'}`}{skipped.length?` · ${skipped.length} übersprungen`:''}</span></div>
+  {selection&&<p className="admin-muted">{selection.sourceMonth?`Personenauswahl laut Personenliste ${new Intl.DateTimeFormat('de-AT',{month:'long',year:'numeric'}).format(new Date(selection.sourceMonth+'-01T12:00:00Z'))}.`:'Für diesen Berichtsmonat liegt keine Personenliste vor. Frühere Zuordnungen des gewählten Bereichs bleiben auswählbar.'}</p>}
   <p className="admin-muted">Prüfe offene Treffer. Gemeinsame Marktziele werden allen zugehörigen Personen unverändert zugeordnet; bei Lighthouse bleiben HE und IM getrennt. Monatsabschlüsse enthalten weiterhin die persönliche Bewertung und Prämie je Person. Bestätige Änderungen mit „Daten prüfen“.</p>
   {rows(included)}
   {skipped.length>0&&<details className="import-skipped-rows"><summary>{skipped.length} übersprungene {skipped.length===1?'Zeile':'Zeilen'} ansehen</summary><p className="admin-muted">Diese Zeilen werden nicht gespeichert. Ist ein Markt doch besetzt, kannst du hier die richtige Person auswählen und die Daten erneut prüfen.</p>{rows(skipped)}</details>}

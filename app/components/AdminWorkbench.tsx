@@ -40,6 +40,7 @@ import { WeeklyMappingWorkspace } from './WeeklyMappingWorkspace';
 import { ImportFieldFeedback, ImportProblemList } from './ImportFeedback';
 import { contextProblems, explainImportFailure, explainImportIssue, importFieldId, mappingProblems, uniqueProblems, type ImportIssue } from '../lib/importFeedback';
 import { RosterReference } from './RosterReference';
+import {ImportStaffingProgressPanel} from './ImportStaffingProgress';
 
 type AdminTab = 'overview' | 'analysis' | 'import' | 'configuration' | 'history' | 'accounts' | 'privacy';
 export type AdminRemote={source:LiveDashboardSource;configs:ConfigVersion[];imports:ImportVersion[];departments:SECGroup['id'][];canManageRoster?:boolean;accounts:ReactNode;privacy:ReactNode;refresh:()=>Promise<void>;request:<T>(path:string,body?:unknown,options?:RequestInit)=>Promise<T>};
@@ -342,6 +343,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
           <span><b>4</b> Prüfen</span>
         </div>
         {remote?.canManageRoster&&<RosterReference remote={remote}/>}
+        {remote&&<ImportStaffingProgressPanel remote={remote} group={importGroup} month={importMonth} asOf={asOf} phase={phase}/>}
         <div className="admin-import-layout">
           <div className="admin-page-grid">
             <section className="admin-card admin-source-card" id={importFieldId('source')} tabIndex={-1}>

@@ -246,7 +246,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
   const validationProblems = uniqueProblems([
     ...localMappingProblems,
     ...(remote && selectedSheet ? contextProblems(importMonth, asOf, phase, selectedSheet) : []),
-    ...(remote&&phase!=='MONTH_FINALIZATION'?targetPeriodProblems(targetFrom,targetThrough,importMonth):[]),
+    ...(remote&&phase!=='MONTH_FINALIZATION'?targetPeriodProblems(targetFrom,targetThrough):[]),
     ...(currentCheck?.issues ?? closingPreview?.issues ?? []).filter(issue => !(localMappingProblems.length && issue.row === 0 && /Pflichtzuordnung|Pflichtfelder|Spaltenkonflikt|Quellspalte|Spalte wählen|Importziel/.test(issue.message))).map(issue => explainImportIssue(issue, feedbackContext)),
     ...(currentCheck && !currentCheck.count && !currentCheck.issues.length && ((currentCheck.skippedUnstaffed??0)+(currentCheck.skippedManual??0)>0) ? [{ title: 'Alle Datenzeilen werden übersprungen.', solution: 'Es bleibt keine Person zum Importieren übrig. Prüfe die übersprungenen Zeilen unter „Personen zuordnen“. Falls eine Zeile doch besetzt ist, wähle dort die richtige Person und prüfe die Daten erneut.', target: 'people' }] : []),
     ...(currentCheck && !currentCheck.count && !currentCheck.issues.length && !((currentCheck.skippedUnstaffed??0)+(currentCheck.skippedManual??0)) ? [{ title: 'Für diesen Monat wurden keine Datensätze gefunden.', solution: `Prüfe Berichtsmonat und Arbeitsblatt. ${currentCheck.otherMonths ? `${currentCheck.otherMonths} Zeilen gehören zu anderen Monaten. ` : ''}Enthält die Datei nur Überschriften, ergänze zuerst die Daten in Excel und wähle die Datei erneut aus.`, target: 'month' }] : []),
@@ -387,7 +387,7 @@ export function AdminWorkbench({remote,onPasswordChange}:{remote?:AdminRemote;on
                 {remote&&<label id={importFieldId('asOf')}>Datenstand<AdminDatePicker ariaLabel="Datenstand" value={asOf} onChange={setAsOf}/><ImportFieldFeedback problems={importProblems} field="asOf" /></label>}
                 {remote&&phase!=='MONTH_FINALIZATION'&&<>
                   <label id={importFieldId('targetFrom')}>Zielzeitraum von<AdminDatePicker allowEmpty ariaLabel="Zielzeitraum von" value={targetFrom} onChange={setTargetFrom}/><ImportFieldFeedback problems={importProblems} field="targetFrom"/></label>
-                  <label id={importFieldId('targetThrough')}>Zielzeitraum bis<AdminDatePicker allowEmpty ariaLabel="Zielzeitraum bis" value={targetThrough} onChange={setTargetThrough}/><small className="admin-muted">Gültigkeit der Ziele, unabhängig vom Datenstand. Beide Felder leer lassen, wenn der Zeitraum nicht bekannt ist.</small><ImportFieldFeedback problems={importProblems} field="targetThrough"/></label>
+                  <label id={importFieldId('targetThrough')}>Zielzeitraum bis<AdminDatePicker allowEmpty ariaLabel="Zielzeitraum bis" value={targetThrough} onChange={setTargetThrough}/><small className="admin-muted">Optionaler Hinweis für die SEC. Die Monatsziele bleiben den ganzen Monat sichtbar. Ohne Zeitraum beide Felder leer lassen.</small><ImportFieldFeedback problems={importProblems} field="targetThrough"/></label>
                 </>}
                 <label id={importFieldId('month')}>Berichtsmonat<AdminMonthPicker value={importMonth} onChange={setImportMonth} ariaLabel="Berichtsmonat" /><ImportFieldFeedback problems={importProblems} field="month" /></label>
                 <label id={importFieldId('phase')}>Phase<AdminSelect ariaLabel="Phase" value={phase} onChange={value => {

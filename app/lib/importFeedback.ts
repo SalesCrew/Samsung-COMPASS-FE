@@ -89,18 +89,18 @@ export function contextProblems(month: string, asOf: string, phase: ImportPhase,
 }
 
 
-export function targetPeriodProblems(from:string,through:string,month:string):ImportProblem[]{
+export function targetPeriodProblems(from:string,through:string):ImportProblem[]{
  if(!from&&!through)return[];
  const problems:ImportProblem[]=[];
  if(!validISODate(from))problems.push({title:'Der Beginn des Zielzeitraums fehlt oder ist ungültig.',solution:'Wähle unter „Zielzeitraum von“ das erste Datum, für das die Monatsziele gelten.',target:'targetFrom'});
  if(!validISODate(through))problems.push({title:'Das Ende des Zielzeitraums fehlt oder ist ungültig.',solution:'Wähle unter „Zielzeitraum bis“ das letzte Datum, für das die Monatsziele gelten.',target:'targetThrough'});
- if(!problems.length&&!readTargetPeriod({from,through},month))problems.push({title:from>through?'Das Ende liegt vor dem Beginn.':'Zielzeitraum und Berichtsmonat passen nicht zusammen.',solution:'Prüfe beide Daten. Der Zeitraum muss den Berichtsmonat berühren; er darf über Monats- und Jahresgrenzen gehen.',target:'targetThrough'});
+ if(!problems.length&&!readTargetPeriod({from,through}))problems.push({title:'Das Ende liegt vor dem Beginn.',solution:'Wähle ein Enddatum ab dem Beginn. Der Zeitraum wird als Hinweis zu den Monatszielen angezeigt.',target:'targetThrough'});
  return problems;
 }
 
 export function explainImportFailure(message: string): ImportProblem {
   const problem = (title: string, solution: string, target = 'source') => ({ title, solution, target });
-  if(/Zielzeitraum/i.test(message))return problem('Der Zielzeitraum ist noch nicht vollständig.', 'Wähle Beginn und Ende des Zielzeitraums. Das Ende darf nicht vor dem Beginn liegen; der Zeitraum muss den Berichtsmonat berühren.', 'targetThrough');
+  if(/Zielzeitraum/i.test(message))return problem('Bitte prüfe den Zeitraumhinweis.', 'Wähle Beginn und Ende; das Ende darf nicht vor dem Beginn liegen. Lass beide Felder leer, wenn du keinen Zeitraum angeben möchtest.', 'targetThrough');
   if (/abgelaufen.*Datei|Importvorschau.*abgelaufen/.test(message)) return problem('Die Dateivorschau ist abgelaufen.', 'Wähle dieselbe Excel-Datei oben erneut aus. Die Vorschau ist nach 20 Minuten oder einem Serverneustart nicht mehr verfügbar. Prüfe danach die Zuordnung erneut.');
   if (/Arbeitsblatt fehlt/.test(message)) return problem('Es ist kein gültiges Arbeitsblatt ausgewählt.', 'Wähle oben unter „Arbeitsblatt“ das Blatt mit den Importdaten. Für Monatsabschlüsse verwende „Pivot Liste“.', 'sheet');
   if (/Obergruppe|Konfiguration passt/.test(message)) return problem('Die Obergruppe oder Zuordnung passt nicht zur Datei.', 'Wähle die Division aus der Excel-Datei, z. B. HE oder IM. Prüfe bei HA / DA auch das DA-Setting. Prüfe die Daten danach erneut.', 'group');

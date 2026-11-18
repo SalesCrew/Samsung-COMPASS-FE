@@ -1,5 +1,5 @@
 import { groupMetricBlocks, type DASetting, type MetricDefinition, type SECGroup } from './groups.ts';
-import {sameTargetPeriod,type TargetPeriod} from './targetPeriod.ts';
+import type {TargetPeriod} from './targetPeriod.ts';
 import { calendarTimeline } from './monthlyClosing.ts';
 
 export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string;sourceTargetPeriod?:TargetPeriod|null;comments?:import('./excelComments.ts').CellComment[] };
@@ -63,7 +63,7 @@ export function targetProgressHistory(snapshots: readonly WeeklyTargetSnapshot[]
   }).map((stand, index, history) => {
     const previous = history[index - 1];
     // Compare adjacent cumulative stands, never a missing basis or an older month.
-    const difference = sameTargetPeriod(stand.targetPeriod,previous?.targetPeriod) && stand.unit===previous?.unit && stand.actual !== null && previous?.actual != null
+    const difference = stand.unit===previous?.unit && stand.actual !== null && previous?.actual != null
       && Number.isFinite(stand.actual) && Number.isFinite(previous.actual)
       ? Math.round((stand.actual - previous.actual) * 10) / 10 : null;
     return { ...stand, change: difference !== null && Number.isFinite(difference) ? difference || 0 : null, previousAsOf: previous?.asOf ?? null };

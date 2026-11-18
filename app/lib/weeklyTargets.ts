@@ -1,5 +1,5 @@
 import { groupMetricBlocks, type DASetting, type MetricDefinition, type SECGroup } from './groups.ts';
-import type {TargetPeriod} from './targetPeriod.ts';
+import {targetPeriodForStand,type TargetPeriod} from './targetPeriod.ts';
 import { calendarTimeline } from './monthlyClosing.ts';
 
 export type WeeklyTarget = MetricDefinition & { target: number | null; actual: number | null; sourceAsOf?:string; sourceUpdatedAt?:string;sourceTargetPeriod?:TargetPeriod|null;comments?:import('./excelComments.ts').CellComment[] };
@@ -35,10 +35,11 @@ function deliveredTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SEC
 export function currentTargets(snapshots: readonly WeeklyTargetSnapshot[], group: SECGroup['id'], setting: DASetting, calendarDay: string) {
   const ordered=deliveredTargets(snapshots, group, setting, calendarDay)
     .sort((a, b) => b.asOf.localeCompare(a.asOf) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-  if(group!=='LH'||!ordered.length)return ordered[0]??null;
+  if(!ordered.length)return null;
+  if(group!=='LH'){const current=ordered[0],period=targetPeriodForStand(current,ordered);return period&&!current.targetPeriod?{...current,targetPeriod:period}:current;}
   // LH sources arrive independently. Keep each metric's own dated stand; never add MTD values.
   const metrics=new Map<string,WeeklyTarget>();
-  for(const snapshot of ordered)for(const metric of snapshot.metrics)if(!metrics.has(metric.key))metrics.set(metric.key,{...metric,sourceAsOf:snapshot.asOf,sourceUpdatedAt:snapshot.updatedAt,sourceTargetPeriod:snapshot.targetPeriod??null});
+  for(const snapshot of ordered)for(const metric of snapshot.metrics)if(!metrics.has(metric.key))metrics.set(metric.key,{...metric,sourceAsOf:snapshot.asOf,sourceUpdatedAt:snapshot.updatedAt,sourceTargetPeriod:targetPeriodForStand(snapshot,ordered.filter(s=>s.metrics.some(m=>m.key===metric.key)))});
   return {...ordered[0],metrics:[...metrics.values()].sort((a,b)=>a.key.startsWith('he-')===b.key.startsWith('he-')?0:a.key.startsWith('he-')?-1:1)};
 }
 

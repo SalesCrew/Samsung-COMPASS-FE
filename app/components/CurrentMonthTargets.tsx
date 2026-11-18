@@ -46,12 +46,12 @@ export function CurrentMonthTargets({ groupId, setting, calendarDay, snapshots, 
   }
   return <section ref={surface} id={groupId + '-section-targets'} className="configured-card current-targets" aria-labelledby={titleId} tabIndex={-1} data-target-view={detail ? 'detail' : 'overview'} data-target-month={calendarDay.slice(0, 7)} data-target-snapshot={snapshot?.id} onKeyDown={event => { if (event.key === 'Escape' && detail) { event.preventDefault(); event.stopPropagation(); close(); } }}>
     <header className="current-targets-heading"><div><h2 id={titleId}>Monatliche Ziele</h2><p>{monthName(calendarDay.slice(0, 7))} <span>· laufender Monat</span></p></div><span className="current-targets-cadence">{isST ? 'Zielstand' : 'Wöchentlich'}</span></header>
-    {snapshot&&groupId!=='LH'&&<TargetPeriodNote period={snapshot.targetPeriod}/>}
+    {snapshot&&groupId!=='LH'&&<TargetPeriodNote period={snapshot.targetPeriod} showMissing={realData}/>}
     <dl className="current-targets-update"><div><dt>Letzte Aktualisierung</dt><dd>{snapshot ? <time dateTime={snapshot.updatedAt}>{publicationDate(snapshot.updatedAt)}</time> : 'Noch ausstehend'}</dd></div>{snapshot && publicationDate(snapshot.asOf) !== publicationDate(snapshot.updatedAt) && <div><dt>Datenstand</dt><dd><time dateTime={snapshot.asOf}>{publicationDate(snapshot.asOf)}</time></dd></div>}</dl>
     {snapshot ? detail ? <div className="weekly-target-detail">
       <button type="button" className="closing-metric-back" ref={back} onClick={close}><ArrowLeft size={25} aria-hidden="true"/>Alle Ziele</button>
       <div className="weekly-target-summary"><div><h3>{detail.label}</h3><p>Wochenverlauf · {monthName(snapshot.month)}{groupId==='LH'&&detail.sourceAsOf?` · Stand ${publicationDate(detail.sourceAsOf)}`:''}</p></div><strong className="current-target-achievement" data-result-available={detailAchievement !== null} data-threshold-reached={detailAchievement !== null && detailAchievement >= 90}>{detailAchievement === null ? 'Noch kein Ist' : number(detailAchievement) + '%'}</strong></div>
-      {groupId==='LH'&&<TargetPeriodNote period={detail.sourceTargetPeriod}/>}
+      {groupId==='LH'&&<TargetPeriodNote period={detail.sourceTargetPeriod} showMissing={realData}/>}
       <SourceComments comments={detail.comments}/>
       <dl className="weekly-target-facts"><div><dt>Ist im Monat</dt><dd>{detail.actual === null ? 'Ausstehend' : <>{number(detail.actual)} <small>{detail.unit}</small></>}{detail.actual !== null && (currentStand?.change != null && currentStand.previousAsOf ? <span className="weekly-target-change" data-change-direction={changeDirection(currentStand.change)}>{signedChange(currentStand.change)} {detail.unit === '%' ? 'Pp.' : detail.unit}<span>zum Stand <time dateTime={currentStand.previousAsOf}>{publicationDate(currentStand.previousAsOf).slice(0, 6)}</time></span></span> : <span className="weekly-target-change">Noch kein Vergleich</span>)}</dd></div><div><dt>Monatsziel</dt><dd>{detail.target === null ? 'Noch offen' : <>{number(detail.target)} <small>{detail.unit}</small></>}</dd></div></dl>
       {history.some(stand => stand.achievement !== null) ? <WeeklyTargetChart history={history} label={detail.label}/> : <p className="current-targets-empty">Noch kein Wochenstand verfügbar.{isST ? ' Qualitative Istwerte folgen mit dem Monatsabschluss.' : ''}</p>}
@@ -62,7 +62,7 @@ export function CurrentMonthTargets({ groupId, setting, calendarDay, snapshots, 
         const metrics = snapshot.metrics.filter(metric => block.metrics.some(definition => definition.key === metric.key));
         return <div className="current-targets-block" key={block.label}>
           {groupId === 'LH' && <h3>{block.label.startsWith('HE') ? 'HE' : 'IM'}{metrics[0]?.sourceAsOf&&<small> · Stand {publicationDate(metrics[0].sourceAsOf)}</small>}</h3>}
-          {groupId==='LH'&&<TargetPeriodNote period={metrics[0]?.sourceTargetPeriod}/>}
+          {groupId==='LH'&&<TargetPeriodNote period={metrics[0]?.sourceTargetPeriod} showMissing={realData}/>}
           <div className="current-targets-columns" aria-hidden="true"><span>{isST ? 'Kriterium / Ist' : 'KPI / Ist im Monat'}</span><span>Monatsziel</span></div>
           <ul aria-label={(groupId === 'LH' ? block.label.slice(0, 2) + ' · ' : '') + 'Ziele ' + monthName(snapshot.month)}>{metrics.map(metric => {
             const achievement = targetAchievement(metric.actual, metric.target);

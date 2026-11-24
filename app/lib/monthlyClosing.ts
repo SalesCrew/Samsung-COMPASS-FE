@@ -125,6 +125,10 @@ export function rollingClosing(history: readonly PointHistoryEntry[], selected: 
   const level=selected.groupId==='ST'?null:!missing.length&&points!==null?annualCategory(points):sourceLevel;
   return {fromMonth:months[0],throughMonth:selected.month,months,missing,knownMonths:known.length,partial:missing.length>0,points,level};
 }
+/** Keep the displayed period complete without inventing levels for missing evidence. */
+export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>){
+  return rollingClosing(history,selected).months.map(month=>({month,level:rollingClosing(history,{month,groupId:selected.groupId}).level}));
+}
 export function annualClosing(reports: readonly MonthlyReport[], selected: MonthlyReport) {
   const year = selected.month.slice(0,4);
   const eligible = activeReports(reports).filter(r => r.month.startsWith(year) && r.month <= selected.month);

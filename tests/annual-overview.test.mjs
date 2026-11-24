@@ -26,15 +26,13 @@ test('incomplete points do not invent a level; a supplied known level remains vi
  assert.match(unknown,/tier-unavailable/);assert.match(unknown,/SEC-Level noch offen/);assert.match(unknown,/2 von 12 Monaten/);
  assert.match(render(AnnualPointsCard,{points:6,currentLevel:'SEC+',incomplete:true,onOpenRules(){}}),/tier-silver/);
 });
-test('ranking explains the chosen closing cohort, missing histories and ambiguous points without peer data',()=>{
+test('ranking keeps own results and empty states while omitting the expanded cohort explanation',()=>{
  const coverage={fromMonth:'2025-10',throughMonth:'2026-09',total:22,comparable:15,missingMonths:6,unclearPoints:1};
  const html=render(LeaderboardCard,{pool:15,rank:7,division:'HE',coverage});
- assert.match(html,/15 SEC mit vollständigen 12 Monaten/);assert.match(html,/Wer wird verglichen/);
- assert.match(html,/Oktober 2025 – September 2026/);assert.match(html,/SEC im gewählten Abschluss<\/dt><dd>22/);
- assert.match(html,/Monate fehlen<\/dt><dd>6/);assert.match(html,/Punkte fehlen oder sind uneindeutig<\/dt><dd>1/);
- assert.match(html,/heutige Zahl aktiver Zugänge/);assert.match(html,/Nur dein eigener Top-10-Platz/);
+ assert.match(html,/15 SEC mit vollständigen 12 Monaten/);assert.match(html,/Leaderboard Position 7 von 15/);
+ assert.doesNotMatch(html,/Wer wird verglichen|SEC im gewählten Abschluss|Monate fehlen|Punkte fehlen oder sind uneindeutig|heutige Zahl aktiver Zugänge|<details/);assert.match(html,/Nur dein eigener Top-10-Platz/);
  const outside=render(LeaderboardCard,{pool:15,rank:null,outsideTopTen:true,coverage});
- assert.match(outside,/Aktuell nicht in den Top 10/);assert.match(outside,/Wer wird verglichen/);assert.doesNotMatch(outside,/Dein Platz/);
+ assert.match(outside,/Aktuell nicht in den Top 10/);assert.doesNotMatch(outside,/Dein Platz|Wer wird verglichen/);
  const small=render(LeaderboardCard,{pool:0,rank:null,reason:'not-enough-participants'});
  assert.doesNotMatch(small,/Wer wird verglichen|SEC im gewählten Abschluss/);
 });

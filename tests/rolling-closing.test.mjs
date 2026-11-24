@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {activeReports,annualClosing,closingFixtures,rollingClosing,historyMonthTier} from '../app/lib/monthlyClosing.ts';
+import {activeReports,annualClosing,closingFixtures,rollingClosing,rollingLevelHistory,historyMonthTier} from '../app/lib/monthlyClosing.ts';
 
 function history(end='2026-02',points=2){
  const row=closingFixtures('IM').at(-1),months=[];let date=new Date(end+'-01T00:00:00Z');
@@ -54,4 +54,24 @@ test('the selected active correction replaces one month and rolling windows do n
  assert.equal(rollingClosing(active,selected).points,25);assert.equal(active.length,12);
  assert.equal(JSON.stringify(rows),original);
  const january=history('2027-01',3);assert.equal(rollingClosing(january,january.at(-1)).points,36);
+});
+test('the level timeline retains all twelve closing months and exposes unproven leading months as gaps',()=>{
+ const rows=history('2026-10');
+ for(const month of ['2025-07','2025-08','2025-09','2025-10'])rows.unshift({...rows[0],month});
+ const original=JSON.stringify(rows),selected={month:'2026-10',groupId:'IM'};
+ const timeline=rollingLevelHistory(rows,selected);
+ assert.equal(timeline.length,12);assert.equal(timeline[0].month,'2025-11');assert.equal(timeline.at(-1).month,'2026-10');
+ assert.deepEqual(timeline.slice(0,7).map(row=>row.level),Array(7).fill(null));
+ assert.deepEqual(timeline.slice(7).map(row=>row.level),Array(5).fill('SEC+'));
+ assert.deepEqual(rollingLevelHistory([...rows,{...rows[0],month:'2026-11',points:3}],selected),timeline);
+ assert.equal(JSON.stringify(rows),original);
+ const september=rollingLevelHistory(rows,{month:'2026-09',groupId:'IM'});
+ assert.equal(september[0].month,'2025-10');assert.equal(september.at(-1).month,'2026-09');
+});
+test('timeline gaps do not erase supplied historical levels or turn zero-point evidence into missing data',()=>{
+ const rows=history('2026-10',0),selected={month:'2026-10',groupId:'IM'};
+ assert.equal(rollingLevelHistory(rows,selected).at(-1).level,'SEC');
+ const partial=rows.filter(row=>row.month!=='2026-06').map(row=>({...row,sourceLevel:row.month==='2025-11'?'SEC Pro':null}));
+ const entries=rollingLevelHistory(partial,selected);
+ assert.equal(entries[0].level,'SEC Pro');assert.equal(entries.find(row=>row.month==='2026-06').level,null);assert.equal(entries.at(-1).level,null);
 });

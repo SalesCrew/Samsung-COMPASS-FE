@@ -5,13 +5,16 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CATEGORY_ROADMAP, NATIVE_CATEGORY_ROADMAP, categoryNodePosition, categoryRoadmapPaths, categoryTrackWidth, visibleCategoryHistory } from '../lib/categoryRoadmap';
 import { type PerformanceTier } from '../lib/groups';
 import { secLevelTier } from '../lib/annual';
+import {monthName} from '../lib/monthlyClosing';
 
 export type CategoryEntry = { id: string; short: string; category: string; label?: string; tier?:PerformanceTier };
 
-export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = false, anchor = true, native = false }: {
-  groupId: string; entries: readonly CategoryEntry[]; flow?: boolean; anchor?: boolean; native?: boolean;
+export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = false, anchor = true, native = false, historyPeriod }: {
+  groupId: string; entries: readonly CategoryEntry[]; flow?: boolean; anchor?: boolean; native?: boolean; historyPeriod?:{fromMonth:string;throughMonth:string};
 }) {
-  const entries=visibleCategoryHistory(sourceEntries);
+  const knownEntries=visibleCategoryHistory(sourceEntries);
+  const entries=historyPeriod&&knownEntries.length?sourceEntries:knownEntries;
+  const unknown=entries.filter(entry=>entry.category==='—').length;
   const viewport = useRef<HTMLDivElement>(null);
   const lastShown = useRef<string | null>(null);
   const followLatest = useRef(true);
@@ -56,11 +59,12 @@ export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = fal
     if (!el) return;
     el.scrollBy({ left: direction * el.clientWidth * .65, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
   }
-  return <section className={`ui-card category-card${flow ? ' overview-flow-card' : ''}${entries.length===1?' is-single-history':''}`} style={nativeStyle} id={anchor ? `${groupId}-section-category` : undefined} aria-label="Kategorieverlauf">
+  return <section className={`ui-card category-card${flow ? ' overview-flow-card' : ''}${entries.length===1?' is-single-history':''}`} style={nativeStyle} id={anchor ? `${groupId}-section-category` : undefined} aria-label="Kategorieverlauf" data-history-from={historyPeriod?.fromMonth} data-history-through={historyPeriod?.throughMonth}>
     <header className="category-history-heading"><h3>SEC-Level-Verlauf</h3>{hasEntries&&(edges.older||edges.newer)&&<div>
       <button type="button" aria-label="Ältere SEC-Level anzeigen" disabled={!hasEntries || !edges.older} onClick={() => move(-1)}><ChevronLeft size={23}/></button>
       <button type="button" aria-label="Neuere SEC-Level anzeigen" disabled={!hasEntries || !edges.newer} onClick={() => move(1)}><ChevronRight size={23}/></button>
     </div>}</header>
+    {historyPeriod&&<p className="category-history-caption">{monthName(historyPeriod.fromMonth)} – {monthName(historyPeriod.throughMonth)}</p>}
     {entries.length ? <div className="category-history-scroll" ref={viewport} onScroll={event => { const el = event.currentTarget; followLatest.current = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1; updateEdges(); }} tabIndex={0} role="region" aria-label="SEC-Level-Verlauf, links und rechts scrollbar" onKeyDown={event => {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); move(event.key === 'ArrowLeft' ? -1 : 1); }
       if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); event.currentTarget.scrollLeft = event.key === 'Home' ? 0 : event.currentTarget.scrollWidth; }
@@ -70,5 +74,6 @@ export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = fal
         {entries.map((entry, index) => <div key={entry.id} className={`category-node tier-${secLevelTier(entry.category)}${index === entries.length - 1 ? ' is-latest' : ''}`} style={(()=>{const position=categoryNodePosition(index,entries.length,entry.category,trackWidth,geometry);return{left:position.left*scale,top:(single?geometry.edge:position.top)*scale};})()} role="listitem" aria-label={`${entry.label ?? entry.short}: ${entry.category === '—' ? 'Level noch nicht verfügbar' : entry.category}`}><small>{entry.short}</small><strong>{entry.category}</strong></div>)}
       </div>
     </div> : <p className="category-empty">Noch kein SEC-Level verfügbar</p>}
+    {historyPeriod&&unknown>0&&<p className="category-history-note">Für {unknown} von {entries.length} Monaten fehlt ein belegtes SEC-Level.</p>}
   </section>;
 }

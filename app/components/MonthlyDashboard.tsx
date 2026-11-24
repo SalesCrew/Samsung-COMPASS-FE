@@ -1,5 +1,5 @@
 import { groupMetricBlocks, type SECGroup } from '../lib/groups';
-import { activeReports, annualClosing, rollingPremiums, rollingClosing, historyMonthTier, monthName, type MonthlyReport, type PremiumHistoryEntry, type PointHistoryEntry } from '../lib/monthlyClosing';
+import { activeReports, annualClosing, rollingPremiums, rollingClosing, rollingLevelHistory, historyMonthTier, monthName, type MonthlyReport, type PremiumHistoryEntry, type PointHistoryEntry } from '../lib/monthlyClosing';
 import type { OwnRanking } from '../lib/secApi';
 import type { DashboardFilters } from '../lib/dashboard';
 import { AnnualPointsCard, CategoryHistoryCard, LeaderboardCard } from './AnnualOverview';
@@ -32,7 +32,9 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, premium
   const pool = realData ? ranking?.pool??0 : group.id === 'LH' ? 4 : group.id === 'DA' ? 31 : group.id === 'IM' ? 28 : 24;
   const showRank = !isST;
   const monthlyReports=new Map(activeReports(reports).map(r=>[r.month,r]));
-  const categories = history.filter(r => r.month <= report.month).map(r => ({ id: r.month, label: monthName(r.month), short: monthName(r.month,true)+(r.month.startsWith(annual.year) ? '' : ' '+r.month.slice(2,4)), category: rollingClosing(history,{month:r.month,groupId:group.id}).level ?? '—',tier:historyMonthTier(r.points,monthlyReports.get(r.month)) }));
+  const historyByMonth=new Map(history.map(row=>[row.month,row]));
+  const levelRows=realData?rollingLevelHistory(history,report):history.filter(row=>row.month<=report.month).map(row=>({month:row.month,level:rollingClosing(history,{month:row.month,groupId:group.id}).level}));
+  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
   return <div className="monthly-dashboard">
     {countdown}
     <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} />
@@ -41,7 +43,7 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, premium
       <header className="monthly-section-heading"><h2 id={group.id+'-annual-title'}>{isST ? 'Jahresübersicht' : 'Punkte & SEC-Level'}</h2><p>{isST?`${annual.year} · Stand nach ${monthName(report.month).split(' ')[0]}`:`Letzte 12 Monate · ${monthName(progress.fromMonth)} – ${monthName(progress.throughMonth)}`}</p></header>
       {isST ? <div className="configured-card st-year-coverage"><strong>{annual.reports.length}</strong><div><h3>veröffentlichte Monatsbewertungen</h3><p>{annual.year} · keine bestätigte Jahrespunkte-Regel</p></div></div> : <>
         <div className="configured-overview"><AnnualPointsCard incomplete={progress.partial} knownMonths={progress.knownMonths} points={progress.points} currentLevel={progress.level} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow />{showRank && <LeaderboardCard pool={pool} rank={rank} reason={ranking?.reason} division={group.id} coverage={ranking?.coverage} outsideTopTen={realData ? ranking?.outsideTopTen??false : group.id === 'DA'} flow />}</div>
-        <AnnualPremiumCard premiums={premiums} /><CategoryHistoryCard native={realData} groupId={group.id} entries={categories} flow anchor={false} />
+        <AnnualPremiumCard premiums={premiums} /><CategoryHistoryCard native={realData} groupId={group.id} entries={categories} historyPeriod={realData?{fromMonth:progress.fromMonth,throughMonth:progress.throughMonth}:undefined} flow anchor={false} />
       </>}
       {isST && <PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" />}
     </section>

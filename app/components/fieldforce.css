@@ -68,6 +68,9 @@
 .fieldforce-dashboard .category-history-heading { height: auto; min-height: 44px; padding: 8px 14px 0; }
 .fieldforce-dashboard .category-history-heading button { width: 32px; height: 32px; padding: 0; }
 .fieldforce-dashboard .category-history-heading h3 { font-size: 13px; }
+.fieldforce-dashboard .category-history-caption,
+.fieldforce-dashboard .category-history-note { margin: 4px 14px 0; color: var(--sec-copy-muted, var(--sec-muted)); font-size: 11px; line-height: 1.5; }
+.fieldforce-dashboard .category-history-note { margin: 0 14px 12px; }
 .fieldforce-dashboard .category-node { padding: 4px; gap: 3px; }
 .fieldforce-dashboard .category-node small { font-size: 10px; }
 .fieldforce-dashboard .category-node strong { font-size: 11px; }

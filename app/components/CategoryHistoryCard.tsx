@@ -7,7 +7,7 @@ import { type PerformanceTier } from '../lib/groups';
 import { secLevelTier } from '../lib/annual';
 import {monthName} from '../lib/monthlyClosing';
 
-export type CategoryEntry = { id: string; short: string; category: string; label?: string; tier?:PerformanceTier; division?:string };
+export type CategoryEntry = { id: string; short: string; category: string; label?: string; tier?:PerformanceTier; division?:string; partialLevel?:boolean; knownMonths?:number };
 
 export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = false, anchor = true, native = false, historyPeriod }: {
   groupId: string; entries: readonly CategoryEntry[]; flow?: boolean; anchor?: boolean; native?: boolean; historyPeriod?:{fromMonth:string;throughMonth:string};
@@ -15,6 +15,7 @@ export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = fal
   const knownEntries=visibleCategoryHistory(sourceEntries);
   const entries=historyPeriod&&knownEntries.length?sourceEntries:knownEntries;
   const unknown=entries.filter(entry=>entry.category==='—').length;
+  const hasRecordedLevels=entries.some(entry=>entry.partialLevel);
   const viewport = useRef<HTMLDivElement>(null);
   const lastShown = useRef<string | null>(null);
   const followLatest = useRef(true);
@@ -71,9 +72,10 @@ export function CategoryHistoryCard({ groupId, entries:sourceEntries, flow = fal
     }}>
       <div className="category-history-track" style={{width: trackWidth*scale}} role="list" aria-label="Monatliche SEC-Level">
         <svg className="category-route" viewBox={`0 0 ${trackWidth} ${trackHeight}`} preserveAspectRatio="none" aria-hidden="true">{categoryRoadmapPaths(entries, trackWidth,geometry).map((path, index) => <path key={entries[index].id} d={path}/>)}</svg>
-        {entries.map((entry, index) => <div key={entry.id} className={`category-node tier-${secLevelTier(entry.category)}${index === entries.length - 1 ? ' is-latest' : ''}`} style={(()=>{const position=categoryNodePosition(index,entries.length,entry.category,trackWidth,geometry);return{left:position.left*scale,top:(single?geometry.edge:position.top)*scale};})()} role="listitem" aria-label={`${entry.label ?? entry.short}: ${entry.category === '—' ? 'Level noch nicht verfügbar' : entry.category}${entry.division?`, Division ${entry.division==='DA'?'HA':entry.division}`:''}`}><small>{entry.short}</small><strong>{entry.category}</strong>{entry.division&&<span className="category-division-badge" data-history-division={entry.division} aria-hidden="true">{entry.division==='DA'?'HA':entry.division}</span>}</div>)}
+        {entries.map((entry, index) => <div key={entry.id} className={`category-node tier-${secLevelTier(entry.category)}${index === entries.length - 1 ? ' is-latest' : ''}`} style={(()=>{const position=categoryNodePosition(index,entries.length,entry.category,trackWidth,geometry);return{left:position.left*scale,top:(single?geometry.edge:position.top)*scale};})()} role="listitem" title={entry.partialLevel?`Stand aus ${entry.knownMonths} erfassten Monaten im Zwölfmonatsfenster`:undefined} aria-label={`${entry.label ?? entry.short}: ${entry.category === '—' ? 'Level noch nicht verfügbar' : entry.category}${entry.division?`, Division ${entry.division==='DA'?'HA':entry.division}`:''}${entry.partialLevel?`, Stand aus ${entry.knownMonths} erfassten Monaten`:''}`}><small>{entry.short}</small><strong>{entry.category}</strong>{entry.division&&<span className="category-division-badge" data-history-division={entry.division} aria-hidden="true">{entry.division==='DA'?'HA':entry.division}</span>}</div>)}
       </div>
     </div> : <p className="category-empty">Noch kein SEC-Level verfügbar</p>}
+    {hasRecordedLevels&&<p className="category-history-note">Level bei kürzerer Historie: Stand der erfassten Monate.</p>}
     {historyPeriod&&unknown>0&&<p className="category-history-note">Für {unknown} von {entries.length} Monaten fehlt ein belegtes SEC-Level.</p>}
   </section>;
 }

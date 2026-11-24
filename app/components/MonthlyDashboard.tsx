@@ -34,7 +34,7 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, levelHi
   const monthlyReports=new Map(activeReports(reports).map(r=>[r.month,r]));
   const historyByMonth=new Map(history.map(row=>[row.month,row]));
   const levelRows=realData?rollingLevelHistory(history,report,levelHistory):history.filter(row=>row.month<=report.month).map(row=>({month:row.month,level:rollingClosing(history,{month:row.month,groupId:group.id}).level}));
-  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',division:'division' in row&&row.division!==group.id?String(row.division):undefined,tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
+  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',partialLevel:'partialLevel' in row?row.partialLevel:false,knownMonths:'knownMonths' in row?row.knownMonths:undefined,division:'division' in row&&row.division!==group.id?String(row.division):undefined,tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
   return <div className="monthly-dashboard">
     {countdown}
     <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} />

@@ -55,13 +55,14 @@ test('the selected active correction replaces one month and rolling windows do n
  assert.equal(JSON.stringify(rows),original);
  const january=history('2027-01',3);assert.equal(rollingClosing(january,january.at(-1)).points,36);
 });
-test('the level timeline retains all twelve closing months and exposes unproven leading months as gaps',()=>{
+test('the level timeline retains twelve closing months and shows earned levels from a shorter recorded history',()=>{
  const rows=history('2026-10');
  for(const month of ['2025-07','2025-08','2025-09','2025-10'])rows.unshift({...rows[0],month});
  const original=JSON.stringify(rows),selected={month:'2026-10',groupId:'IM'};
  const timeline=rollingLevelHistory(rows,selected);
  assert.equal(timeline.length,12);assert.equal(timeline[0].month,'2025-11');assert.equal(timeline.at(-1).month,'2026-10');
- assert.deepEqual(timeline.slice(0,7).map(row=>row.level),Array(7).fill(null));
+ assert.deepEqual(timeline.slice(0,7).map(row=>row.level),[...Array(6).fill('SEC'),'SEC+']);
+ assert(timeline.slice(0,7).every(row=>row.partialLevel));assert.equal(timeline[0].knownMonths,5);
  assert.deepEqual(timeline.slice(7).map(row=>row.level),Array(5).fill('SEC+'));
  assert.deepEqual(rollingLevelHistory([...rows,{...rows[0],month:'2026-11',points:3}],selected),timeline);
  assert.equal(JSON.stringify(rows),original);
@@ -81,7 +82,7 @@ test('former-division history is read in its own source division without mixing 
  const levels=[...former,...own.filter(row=>row.month>'2026-07').map(row=>({...row,groupId:'LH'}))];const before=JSON.stringify(levels);
  const timeline=rollingLevelHistory(own,selected,levels);
  assert.equal(timeline.find(row=>row.month==='2026-07').level,'SEC Pro');assert.equal(timeline.find(row=>row.month==='2026-07').division,'HE');
- assert.equal(timeline.at(-1).level,null);assert.equal(timeline.at(-1).division,'LH');
+ assert.equal(timeline.at(-1).level,'SEC');assert.equal(timeline.at(-1).knownMonths,3);assert(timeline.at(-1).partialLevel);assert.equal(timeline.at(-1).division,'LH');
  assert.equal(rollingClosing(own,selected).points,12);assert.equal(JSON.stringify(levels),before);
 });
 test('confirmed former role labels the circle without relabelling source data or changing totals',()=>{
@@ -96,4 +97,15 @@ test('current-division rows take precedence, including unknowns; ambiguous prior
  const missing=own.map(row=>row.month==='2026-10'?{...row,points:null}:row);assert.equal(rollingLevelHistory(own,selected,[...missing,...foreign]).at(-1).level,null);
  const ambiguous=[...foreign,...foreign.map(row=>({...row,groupId:'IM'}))];assert.equal(rollingLevelHistory(own,selected,ambiguous).at(-1).level,null);
  assert.equal(rollingLevelHistory(own,selected,[]).at(-1).level,null);
+});
+
+test('six recorded months earn a level without adding fake older rows or relaxing an interior missing value',()=>{
+ const selected={month:'2026-10',groupId:'HE'},rows=history('2026-10',2).slice(-6),before=JSON.stringify(rows),result=rollingClosing(rows,selected);
+ assert.equal(result.points,12);assert.equal(result.level,'SEC');assert.equal(result.knownMonths,6);assert.equal(result.partial,true);assert.equal(result.levelFromRecordedMonths,true);assert.equal(rows.length,6);assert.equal(JSON.stringify(rows),before);
+ const timeline=rollingLevelHistory(rows,selected);assert(timeline.slice(0,6).every(row=>row.level===null));assert(timeline.slice(6).every(row=>row.level==='SEC'));assert(timeline.slice(6).every(row=>row.partialLevel));
+ const withHole=rows.filter(row=>row.month!=='2026-08');assert.equal(rollingClosing(withHole,selected).level,null);
+ const unknownStart=[{...rows[0],month:'2026-04',points:null},...rows];assert.equal(rollingClosing(unknownStart,selected).level,null);
+ const invalid=rows.map(row=>row.month==='2026-08'?{...row,points:null}:row);assert.equal(rollingClosing(invalid,selected).level,null);
+ const zero=rows.map(row=>({...row,points:0}));assert.equal(rollingClosing(zero,selected).points,0);assert.equal(rollingClosing(zero,selected).level,'SEC');
+ assert.equal(rollingClosing(rows,{...selected,groupId:'ST'}).level,null);
 });

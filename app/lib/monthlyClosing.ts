@@ -123,19 +123,25 @@ export function rollingClosing(history: readonly PointHistoryEntry[], selected: 
   const points=selected.groupId==='ST'||!known.length?null:known.reduce((sum,row)=>sum+row.points!,0);
   const supplied=byMonth.get(selected.month)?.sourceLevel?.replace(/\s/g,'').toUpperCase();
   const sourceLevel=supplied==='SEC'?'SEC':supplied==='SEC+'?'SEC+':supplied==='SECPRO'?'SEC Pro':null;
-  const level=selected.groupId==='ST'?null:!missing.length&&points!==null?annualCategory(points):sourceLevel;
-  return {fromMonth:months[0],throughMonth:selected.month,months,missing,knownMonths:known.length,partial:missing.length>0,points,level};
+  // A shorter recorded history still has an earned level. Only leading months
+  // before its first record may be absent; gaps/errors within that history stay unknown.
+  const firstRecorded=history.filter(row=>row.month<=selected.month).map(row=>row.month).sort()[0];
+  const leadingOnly=points!==null&&missing.length>0&&firstRecorded!==undefined&&missing.every(month=>month<firstRecorded);
+  const levelFromRecordedMonths=selected.groupId!=='ST'&&sourceLevel===null&&leadingOnly;
+  const level=selected.groupId==='ST'?null:!missing.length&&points!==null?annualCategory(points):sourceLevel??(levelFromRecordedMonths?annualCategory(points!):null);
+  return {fromMonth:months[0],throughMonth:selected.month,months,missing,knownMonths:known.length,partial:missing.length>0,points,level,levelFromRecordedMonths};
 }
 /** Keep the displayed period complete without inventing levels for missing evidence. */
-export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>,levels?:readonly LevelHistoryEntry[]):{month:string;level:string|null;division?:GroupId}[]{
+export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>,levels?:readonly LevelHistoryEntry[]):{month:string;level:string|null;division?:GroupId;knownMonths?:number;partialLevel?:boolean}[]{
   return rollingClosing(history,selected).months.map(month=>{
-    if(!levels)return {month,level:rollingClosing(history,{month,groupId:selected.groupId}).level};
+    if(!levels){const current=rollingClosing(history,{month,groupId:selected.groupId});return {month,level:current.level,knownMonths:current.knownMonths,partialLevel:current.levelFromRecordedMonths};}
     const candidates=levels.filter(row=>row.month===month);
     const own=candidates.filter(row=>row.groupId===selected.groupId);
     const row=own.length===1?own[0]:own.length===0&&candidates.length===1?candidates[0]:undefined;
     if(!row)return {month,level:null};
     const source=levels.filter(item=>item.groupId===row.groupId);
-    return {month,level:rollingClosing(source,{month,groupId:row.groupId}).level,division:row.division??row.groupId};
+    const current=rollingClosing(source,{month,groupId:row.groupId});
+    return {month,level:current.level,division:row.division??row.groupId,knownMonths:current.knownMonths,partialLevel:current.levelFromRecordedMonths};
   });
 }
 export function annualClosing(reports: readonly MonthlyReport[], selected: MonthlyReport) {

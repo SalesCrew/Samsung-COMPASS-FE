@@ -6,3 +6,8 @@ test('a historical division badge retains the circle content and labels the acce
  const without=renderToStaticMarkup(createElement(CategoryHistoryCard,{...props,entries:props.entries.map(row=>({...row,division:undefined}))}));
  assert.deepEqual([...html.matchAll(/style="([^"]+)"/g)].map(m=>m[1]),[...without.matchAll(/style="([^"]+)"/g)].map(m=>m[1]));assert.doesNotMatch(without,/category-division-badge/);
 });
+
+test('a shorter recorded history labels the source coverage without changing circle geometry',()=>{
+ const props={groupId:'HE',native:true,entries:[{id:'2026-10',label:'Oktober 2026',short:'Okt',category:'SEC',partialLevel:true,knownMonths:8}]};
+ const html=renderToStaticMarkup(createElement(CategoryHistoryCard,props));assert.match(html,/Stand aus 8 erfassten Monaten im Zwölfmonatsfenster/);assert.match(html,/Oktober 2026: SEC, Stand aus 8 erfassten Monaten/);assert.match(html,/Level bei kürzerer Historie: Stand der erfassten Monate/);assert.match(html,/category-node tier-bronze/);
+});

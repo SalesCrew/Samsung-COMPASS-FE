@@ -1099,6 +1099,22 @@ button {
 .category-node small, .category-node strong { line-height: 1.2; white-space: nowrap; flex-shrink: 0; }
 .category-node small { color: var(--sec-copy-muted, var(--sec-muted)); font-size: max(var(--sec-min-font, 0px), calc(16px * var(--sec-ui-scale, 1))); font-weight: 460; }
 .category-node strong { font-size: max(var(--sec-min-font, 0px), calc(18px * var(--sec-ui-scale, 1))); font-weight: 490; }
+.category-division-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--sec-blue);
+  border-radius: 50%;
+  background: var(--sec-surface);
+  color: var(--sec-blue);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+}
 .category-node.is-latest { background: color-mix(in srgb, var(--tier-color) 4%, var(--sec-surface)); }
 
 .filter-card {

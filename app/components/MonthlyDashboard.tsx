@@ -1,5 +1,5 @@
 import { groupMetricBlocks, type SECGroup } from '../lib/groups';
-import { activeReports, annualClosing, rollingPremiums, rollingClosing, rollingLevelHistory, historyMonthTier, monthName, type MonthlyReport, type PremiumHistoryEntry, type PointHistoryEntry } from '../lib/monthlyClosing';
+import { activeReports, annualClosing, rollingPremiums, rollingClosing, rollingLevelHistory, historyMonthTier, monthName, type MonthlyReport, type PremiumHistoryEntry, type PointHistoryEntry, type LevelHistoryEntry } from '../lib/monthlyClosing';
 import type { OwnRanking } from '../lib/secApi';
 import type { DashboardFilters } from '../lib/dashboard';
 import { AnnualPointsCard, CategoryHistoryCard, LeaderboardCard } from './AnnualOverview';
@@ -10,10 +10,10 @@ import { ClosingMetricExplorer } from './ClosingMetricExplorer';
 import { KPIReleaseCountdown } from './KPIReleaseCountdown';
 import { CurrentMonthTargets } from './CurrentMonthTargets';
 import type { WeeklyTargetSnapshot } from '../lib/weeklyTargets';
-export function MonthlyDashboard({ group, report, reports, pointHistory, premiumHistory, filters, calendarDay, targetSnapshots, unread, latestUnread, onDetails, onLatest, onOpenRules, rulesOpen, onTargetsView, realData=false, ranking }: {
+export function MonthlyDashboard({ group, report, reports, pointHistory, levelHistory, premiumHistory, filters, calendarDay, targetSnapshots, unread, latestUnread, onDetails, onLatest, onOpenRules, rulesOpen, onTargetsView, realData=false, ranking }: {
   group: SECGroup; report: MonthlyReport | null; reports: readonly MonthlyReport[]; filters: DashboardFilters; calendarDay: string;
   targetSnapshots: readonly WeeklyTargetSnapshot[]; unread: boolean; latestUnread: MonthlyReport | null; onDetails: () => void; onLatest: () => void; onOpenRules: () => void; rulesOpen: boolean; onTargetsView: () => void;
-  pointHistory?: readonly PointHistoryEntry[]; premiumHistory?: readonly PremiumHistoryEntry[]; realData?: boolean; ranking?: OwnRanking;
+  pointHistory?: readonly PointHistoryEntry[]; levelHistory?: readonly LevelHistoryEntry[]; premiumHistory?: readonly PremiumHistoryEntry[]; realData?: boolean; ranking?: OwnRanking;
 }) {
   const isST = group.id === 'ST';
   const countdown = <KPIReleaseCountdown calendarDay={calendarDay} />;
@@ -33,8 +33,8 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, premium
   const showRank = !isST;
   const monthlyReports=new Map(activeReports(reports).map(r=>[r.month,r]));
   const historyByMonth=new Map(history.map(row=>[row.month,row]));
-  const levelRows=realData?rollingLevelHistory(history,report):history.filter(row=>row.month<=report.month).map(row=>({month:row.month,level:rollingClosing(history,{month:row.month,groupId:group.id}).level}));
-  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
+  const levelRows=realData?rollingLevelHistory(history,report,levelHistory):history.filter(row=>row.month<=report.month).map(row=>({month:row.month,level:rollingClosing(history,{month:row.month,groupId:group.id}).level}));
+  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',division:'division' in row&&row.division!==group.id?String(row.division):undefined,tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
   return <div className="monthly-dashboard">
     {countdown}
     <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} />

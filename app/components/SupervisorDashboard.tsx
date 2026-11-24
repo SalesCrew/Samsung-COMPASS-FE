@@ -57,7 +57,7 @@ export function SupervisorDashboard({session,onInvalidSession}:{session:Session;
  const shown=current&&data?.selectedAssignment===selection?data:null;
  const live:LivePhoneData|null=shown&&current?{
   readOnly:true,personName:current.name,market:current.market,groupId:current.department_id,setting:current.setting,
-  reports:shown.reports.map(reportFromRow),pointHistory:shown.pointHistory,premiumHistory:shown.premiumHistory,
+  reports:shown.reports.map(reportFromRow),pointHistory:shown.pointHistory,levelHistory:shown.levelHistory,premiumHistory:shown.premiumHistory,
   targetSnapshots:weeklyFromRows(shown.weekly),calendarDay:shown.calendarDay,readIds:shown.read.map(r=>r.report_id),acknowledge,rankings:shown.rankings,
  }:null;
  return <main className="sec-personal supervisor-dashboard">

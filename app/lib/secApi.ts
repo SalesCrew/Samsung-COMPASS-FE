@@ -3,7 +3,7 @@ import { createClient, type Session } from '@supabase/supabase-js';
 import { sessionFetch, SessionUnavailable } from './sessionTransport';
 import type { DASetting, SECGroup } from './groups';
 import {groupProjectAssessment} from './projectAssessment';
-import type { MonthlyReport, PointHistoryEntry, PremiumHistoryEntry } from './monthlyClosing';
+import type { MonthlyReport, PointHistoryEntry, LevelHistoryEntry, PremiumHistoryEntry } from './monthlyClosing';
 import { activeWeeklyRows, type WeeklyTargetSnapshot } from './weeklyTargets';
 
 export type SECAccount={user_id:string;email:string;display_name:string;role:'app_admin'|'department_admin'|'sec'|'supervisor';department_ids:SECGroup['id'][];person_id:string|null;primary_department:SECGroup['id']|null;setting:DASetting;active:boolean;must_change_password:boolean;is_test:boolean;notice_version:string|null};
@@ -15,7 +15,7 @@ export type ImportRow={targetPeriod?:import('./targetPeriod').TargetPeriod;id:st
 export type AdminData={reports:PublishedRow[];weekly:PublishedRow[];imports:ImportRow[];configurations:ConfigRow[];people:Person[];assignments:Assignment[]};
 export type OwnRanking={pool:number;rank:number|null;outsideTopTen:boolean;reason?:'incomplete-history'|'not-enough-participants'|'unavailable';coverage?:{fromMonth:string;throughMonth:string;total:number;comparable:number;missingMonths:number;unclearPoints:number}};
 export type SupervisorPerson={assignment_id:string;person_id:string;name:string;department_id:SECGroup['id'];setting:DASetting;market:string};
-export type DashboardData={presentation?:boolean;readOnly?:boolean;subject?:{person_id:string;display_name:string;primary_department:SECGroup['id'];setting:DASetting}|null;profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];premiumHistory?:PremiumHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
+export type DashboardData={presentation?:boolean;readOnly?:boolean;subject?:{person_id:string;display_name:string;primary_department:SECGroup['id'];setting:DASetting}|null;profile:SECAccount;assignments:Assignment[];selectedAssignment?:string;reports:PublishedRow[];weekly:PublishedRow[];pointHistory?:PointHistoryEntry[];levelHistory?:LevelHistoryEntry[];premiumHistory?:PremiumHistoryEntry[];read:{report_id:string}[];calendarDay:string;realCalendarDay?:string;testReplay?:boolean;rankings?:Record<string,OwnRanking>};
 export class SECAPIError extends Error{status:number;code:string;constructor(message:string,status:number,code:string){super(message);this.status=status;this.code=code;}}
 let browserAuth:ReturnType<typeof createClient>|undefined;
 export function secAuth(){

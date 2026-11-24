@@ -17,6 +17,7 @@ export type MonthlyReport = {
   metrics: ClosingMetric[]; qualitative: ClosingMetric[]; changed: string[];
 };
 export type PointHistoryEntry = { month: string; points: number | null; sourceLevel?: string | null };
+export type LevelHistoryEntry = PointHistoryEntry & {groupId:GroupId;division?:GroupId};
 /** Use the same supplied monthly category as the summary; point-only history has documented 1/2/3 awards. */
 export function historyMonthTier(points:number|null,report?:Pick<MonthlyReport,'tier'|'points'>):PerformanceTier {
   return report?(report.points===null?'unavailable':report.tier):(points===3?'gold':points===2?'silver':points===1?'bronze':'unavailable');
@@ -126,8 +127,16 @@ export function rollingClosing(history: readonly PointHistoryEntry[], selected: 
   return {fromMonth:months[0],throughMonth:selected.month,months,missing,knownMonths:known.length,partial:missing.length>0,points,level};
 }
 /** Keep the displayed period complete without inventing levels for missing evidence. */
-export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>){
-  return rollingClosing(history,selected).months.map(month=>({month,level:rollingClosing(history,{month,groupId:selected.groupId}).level}));
+export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>,levels?:readonly LevelHistoryEntry[]):{month:string;level:string|null;division?:GroupId}[]{
+  return rollingClosing(history,selected).months.map(month=>{
+    if(!levels)return {month,level:rollingClosing(history,{month,groupId:selected.groupId}).level};
+    const candidates=levels.filter(row=>row.month===month);
+    const own=candidates.filter(row=>row.groupId===selected.groupId);
+    const row=own.length===1?own[0]:own.length===0&&candidates.length===1?candidates[0]:undefined;
+    if(!row)return {month,level:null};
+    const source=levels.filter(item=>item.groupId===row.groupId);
+    return {month,level:rollingClosing(source,{month,groupId:row.groupId}).level,division:row.division??row.groupId};
+  });
 }
 export function annualClosing(reports: readonly MonthlyReport[], selected: MonthlyReport) {
   const year = selected.month.slice(0,4);

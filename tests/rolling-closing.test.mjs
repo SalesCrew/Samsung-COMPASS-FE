@@ -75,3 +75,25 @@ test('timeline gaps do not erase supplied historical levels or turn zero-point e
  const entries=rollingLevelHistory(partial,selected);
  assert.equal(entries[0].level,'SEC Pro');assert.equal(entries.find(row=>row.month==='2026-06').level,null);assert.equal(entries.at(-1).level,null);
 });
+
+test('former-division history is read in its own source division without mixing point windows',()=>{
+ const selected={month:'2026-10',groupId:'LH'},own=history('2026-10',1),former=history('2026-07',3).map(row=>({...row,groupId:'HE'}));
+ const levels=[...former,...own.filter(row=>row.month>'2026-07').map(row=>({...row,groupId:'LH'}))];const before=JSON.stringify(levels);
+ const timeline=rollingLevelHistory(own,selected,levels);
+ assert.equal(timeline.find(row=>row.month==='2026-07').level,'SEC Pro');assert.equal(timeline.find(row=>row.month==='2026-07').division,'HE');
+ assert.equal(timeline.at(-1).level,null);assert.equal(timeline.at(-1).division,'LH');
+ assert.equal(rollingClosing(own,selected).points,12);assert.equal(JSON.stringify(levels),before);
+});
+test('confirmed former role labels the circle without relabelling source data or changing totals',()=>{
+ const own=history('2026-10',2).map(row=>({...row,groupId:'LH',division:row.month<='2026-07'?'HE':'LH'}));
+ const selected={month:'2026-10',groupId:'LH'},baseline=rollingLevelHistory(own,selected),labelled=rollingLevelHistory(own,selected,own);
+ assert.deepEqual(labelled.map(row=>row.level),baseline.map(row=>row.level));assert.equal(labelled.at(-1).level,'SEC+');
+ assert.equal(labelled.find(row=>row.month==='2026-07').division,'HE');assert.equal(labelled.at(-1).division,'LH');assert.equal(rollingClosing(own,selected).points,24);
+});
+test('current-division rows take precedence, including unknowns; ambiguous prior divisions remain unproven',()=>{
+ const own=history('2026-10',2).map(row=>({...row,groupId:'LH'})),selected={month:'2026-10',groupId:'LH'};
+ const foreign=own.map(row=>({...row,groupId:'HE',points:3}));assert.equal(rollingLevelHistory(own,selected,[...own,...foreign]).at(-1).level,'SEC+');
+ const missing=own.map(row=>row.month==='2026-10'?{...row,points:null}:row);assert.equal(rollingLevelHistory(own,selected,[...missing,...foreign]).at(-1).level,null);
+ const ambiguous=[...foreign,...foreign.map(row=>({...row,groupId:'IM'}))];assert.equal(rollingLevelHistory(own,selected,ambiguous).at(-1).level,null);
+ assert.equal(rollingLevelHistory(own,selected,[]).at(-1).level,null);
+});

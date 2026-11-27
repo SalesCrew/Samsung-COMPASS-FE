@@ -19,3 +19,10 @@ test('confirmed absence circles remain visible as dashes without becoming a miss
  assert.equal((html.match(/<strong>—<\/strong>/g)??[]).length,3);
  assert.match(html,/nicht teilgenommen/);assert.doesNotMatch(html,/Noch kein SEC-Level verfügbar|fehlt ein belegtes SEC-Level/);
 });
+
+
+test('months before a confirmed start retain their dash circles without an evidence warning',()=>{
+ const entries=[{id:'2026-08',short:'Aug',category:'—',beforeStart:true},{id:'2026-09',short:'Sep',category:'SEC',market:'Alter Markt'}];
+ const html=renderToStaticMarkup(createElement(CategoryHistoryCard,{groupId:'HE',native:true,entries,historyPeriod:{fromMonth:'2025-10',throughMonth:'2026-09'}}));
+ assert.match(html,/data-participation="not-started"/);assert.match(html,/<strong>—<\/strong>/);assert.match(html,/Vor SEC-Beginn/);assert.match(html,/vor deinem SEC-Beginn/);assert.match(html,/Markt Alter Markt/);assert.doesNotMatch(html,/fehlt ein belegtes SEC-Level/);
+});

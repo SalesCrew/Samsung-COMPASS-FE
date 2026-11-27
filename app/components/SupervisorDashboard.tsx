@@ -1,5 +1,7 @@
 'use client';
 
+import {marketLineageText} from '../lib/marketLineage';
+
 import {useEffect,useState} from 'react';
 import type {Session} from '@supabase/supabase-js';
 import {Eye,RefreshCw} from 'lucide-react';
@@ -64,7 +66,7 @@ export function SupervisorDashboard({session,onInvalidSession}:{session:Session;
   <section className="supervisor-switcher" aria-label="Supervisoransicht">
    <div className="supervisor-switcher-caption"><span>Supervisor</span><div className="supervisor-tools"><span><Eye size={13} aria-hidden="true"/>Nur ansehen</span><button type="button" disabled={busy} onClick={()=>setRevision(n=>n+1)} aria-label="Dashboard aktualisieren"><RefreshCw size={14} aria-hidden="true"/></button></div></div>
    <SupervisorSelect people={people??[]} value={selection} loading={people===null&&!directoryError} onChange={value=>{setSelection(value);setError('');window.scrollTo({top:0,behavior:'instant'});}}/>
-   {shown?.historyScope==='assignment'&&<p className="supervisor-message">Eigene Werte und Historie des ausgewählten Markts.</p>}
+   {shown?.historyScope==='assignment'&&<p className="supervisor-message">{marketLineageText(shown.marketLineage)??'Eigene Werte und Historie des ausgewählten Markts.'}</p>}
   </section>
   {directoryError&&<p className="supervisor-message" role="alert">{directoryError} <button type="button" onClick={()=>setRevision(n=>n+1)}>Erneut versuchen</button></p>}
   {error&&<p className="supervisor-message" role="alert">{error} <button type="button" onClick={()=>setRevision(n=>n+1)}>Erneut versuchen</button></p>}

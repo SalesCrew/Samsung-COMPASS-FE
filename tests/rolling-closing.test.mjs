@@ -123,3 +123,16 @@ test('confirmed absences keep calendar coverage without counting supplied source
  const stillUnknown=confirmed.map(r=>r.month==='2026-05'?{...r,points:null}:r);assert.equal(rollingClosing(stillUnknown,selected).level,null);
  assert.equal(JSON.stringify(confirmed),before);
 });
+
+
+test('confirmed SEC starts keep prior circles empty and distinguish a complete known period from missing work months',()=>{
+ const rows=history('2026-10',null).map(row=>row.month<'2026-09'?{...row,participation:'not-started'}:{...row,points:2});
+ const original=JSON.stringify(rows),selected={month:'2026-10',groupId:'HE'},progress=rollingClosing(rows,selected),levels=rollingLevelHistory(rows,selected);
+ assert.equal(progress.points,4);assert.equal(progress.level,'SEC');assert.equal(progress.partial,false);assert.equal(progress.knownMonths,12);
+ assert.deepEqual(levels.filter(row=>row.beforeStart).map(row=>row.month),rows.filter(row=>row.participation).map(row=>row.month));
+ assert(levels.filter(row=>row.beforeStart).every(row=>row.level===null));assert.equal(levels.at(-1).level,'SEC');
+ assert.equal(rollingClosing(rows,{...selected,month:'2026-08'}).points,null);assert.equal(rollingClosing(rows,{...selected,month:'2026-08'}).level,null);
+ const unknown=rows.map(row=>row.month==='2026-09'?{...row,points:null}:row);assert.equal(rollingClosing(unknown,selected).level,null);
+ const zero=rows.map(row=>row.participation?row:{...row,points:0});assert.equal(rollingClosing(zero,selected).points,0);assert.equal(rollingClosing(zero,selected).level,'SEC');
+ assert.equal(JSON.stringify(rows),original);
+});

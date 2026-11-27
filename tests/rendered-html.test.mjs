@@ -32,12 +32,17 @@ test('server-rendered monthly Fieldforce flow has coherent periods and complete 
   if(group==='ST'){assert.doesNotMatch(phone,/points-card|leaderboard-card|annual-premium-card|Sales Race|Sell-out/);assert.match(phone,/Prämienmodell noch nicht bestätigt/);assert.match(phone,/94 Prozent Softbonus/);}
   if(group==='LH'){assert.match(phone,/data-ranking-state="insufficient-data"/);assert.equal((phone.match(/data-metric="/g)??[]).length,14);}
   if(group==='IM')assert.equal((phone.match(/data-metric="/g)??[]).length,9);
-  if(group==='DA')assert.equal((phone.match(/data-metric="/g)??[]).length,7);
+  if(group==='DA'){
+   assert.equal((phone.match(/data-metric="/g)??[]).length,7);
+   assert.doesNotMatch(phone,/leaderboard-card|Leaderboard|Top-10/);
+   assert.match(phone,/configured-overview without-leaderboard/);
+   assert.match(phone,/points-card[^\"]*is-full-width/);
+  }
   if(group==='HE')assert.equal((phone.match(/data-metric="/g)??[]).length,7);
   assert.match(phone,/data-metric-view="overview"/);assert.match(phone,/Details anzeigen/);
  }
  assert.match(html,/32 von 36 Punkten, letzte 12 Monate/);assert.match(html,/Leaderboard Position 7 von 24/);
- assert.doesNotMatch(html,/data-rank="(?:11|14)"/);assert.match(html,/Aktuell nicht in den Top 10/);
+ assert.doesNotMatch(html,/data-rank="(?:11|14)"/);
  assert.doesNotMatch(html,/kpi-constellation-card|target-liquid-wave|lever-card/);
  assert.match(html,/Design tokens/);assert.doesNotMatch(html,/codex-preview|react-loading-skeleton/);
 });

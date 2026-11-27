@@ -44,7 +44,7 @@ export function ConfiguredDashboard({ group, filters, onOpenFilters, onOpenRules
   const monthOffset = Number(filters.month.slice(-2)) - 9;
   const latestUpdate = snapshotUpdates(group.id, filters.month).filter(item => item.date <= cutoff(filters)).at(-1);
   const month = MONTHS.find(value => value.id === filters.month)?.label ?? filters.month;
-  const showLeaderboard = !isST && leaderboardState(demo.pool, hasResult ? demo.rank : null).visible;
+  const showLeaderboard = !isST && group.id !== 'DA' && leaderboardState(demo.pool, hasResult ? demo.rank : null).visible;
   const categories = historyRows(filters).filter(row => row.id >= '2026-06').flatMap(row => {
     const snapshot = groupDemoAt(group.id, { ...filters, month: row.id, snapshot: 'latest' });
     return snapshot ? [{ id: row.id, short: row.short, category: annualCategory(snapshot.annualPoints), tier:snapshot.tier }] : [];

@@ -30,7 +30,7 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, levelHi
     : defaults;
   const rank = realData ? ranking?.rank??null : group.id === 'HE' ? 7 : group.id === 'IM' ? 4 : null;
   const pool = realData ? ranking?.pool??0 : group.id === 'LH' ? 4 : group.id === 'DA' ? 31 : group.id === 'IM' ? 28 : 24;
-  const showRank = !isST;
+  const showRank = !isST && group.id !== 'DA';
   const monthlyReports=new Map(activeReports(reports).map(r=>[r.month,r]));
   const historyByMonth=new Map(history.map(row=>[row.month,row]));
   const levelRows=realData?rollingLevelHistory(history,report,levelHistory):history.filter(row=>row.month<=report.month).map(row=>({month:row.month,level:rollingClosing(history,{month:row.month,groupId:group.id}).level}));
@@ -42,7 +42,7 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, levelHi
     <section className="monthly-annual-section" id={isST ? undefined : group.id+'-section-category'} aria-labelledby={group.id+'-annual-title'}>
       <header className="monthly-section-heading"><h2 id={group.id+'-annual-title'}>{isST ? 'Jahresübersicht' : 'Punkte & SEC-Level'}</h2><p>{isST?`${annual.year} · Stand nach ${monthName(report.month).split(' ')[0]}`:`Letzte 12 Monate · ${monthName(progress.fromMonth)} – ${monthName(progress.throughMonth)}`}</p></header>
       {isST ? <div className="configured-card st-year-coverage"><strong>{annual.reports.length}</strong><div><h3>veröffentlichte Monatsbewertungen</h3><p>{annual.year} · keine bestätigte Jahrespunkte-Regel</p></div></div> : <>
-        <div className="configured-overview"><AnnualPointsCard incomplete={progress.partial} knownMonths={progress.knownMonths} points={progress.points} currentLevel={progress.level} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow />{showRank && <LeaderboardCard pool={pool} rank={rank} reason={ranking?.reason} division={group.id} coverage={ranking?.coverage} outsideTopTen={realData ? ranking?.outsideTopTen??false : group.id === 'DA'} flow />}</div>
+        <div className={`configured-overview${!showRank ? ' without-leaderboard' : ''}`}><AnnualPointsCard incomplete={progress.partial} knownMonths={progress.knownMonths} points={progress.points} currentLevel={progress.level} onOpenRules={onOpenRules} rulesOpen={rulesOpen} flow fullWidth={!showRank} />{showRank && <LeaderboardCard pool={pool} rank={rank} reason={ranking?.reason} division={group.id} coverage={ranking?.coverage} outsideTopTen={realData ? ranking?.outsideTopTen??false : group.id === 'DA'} flow />}</div>
         <AnnualPremiumCard premiums={premiums} /><CategoryHistoryCard native={realData} groupId={group.id} entries={categories} historyPeriod={realData?{fromMonth:progress.fromMonth,throughMonth:progress.throughMonth}:undefined} flow anchor={false} />
       </>}
       {isST && <PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" />}

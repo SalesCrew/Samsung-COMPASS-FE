@@ -2,9 +2,9 @@ import { ArrowUpRight, Check, FileText } from 'lucide-react';
 import { compareClosing, monthName, publicationDate, type MonthlyReport } from '../lib/monthlyClosing';
 import { TIER_LABELS } from '../lib/groups';
 import { SoftbonusOverviewCard } from './SoftbonusOverview';
-export function MonthlyReportSummary({ report, reports, unread, latestUnread, comparison, onDetails, onLatest }: {
+export function MonthlyReportSummary({ report, reports, unread, latestUnread, comparison, onDetails, onLatest, absence=false }: {
   report: MonthlyReport; reports: readonly MonthlyReport[]; unread: boolean; latestUnread: MonthlyReport | null;
-  comparison: boolean; onDetails: () => void; onLatest: () => void;
+  comparison: boolean; onDetails: () => void; onLatest: () => void; absence?:boolean;
 }) {
   const isST = report.groupId === 'ST';
   return <section className={`configured-card monthly-report-summary${isST ? ' is-qualitative' : ''}`} data-report={report.publicationId} aria-label={`Monatsergebnis ${monthName(report.month)}`}>
@@ -22,7 +22,7 @@ export function MonthlyReportSummary({ report, reports, unread, latestUnread, co
           <small>{delta ? `${delta.value > 0 ? '+' : ''}${delta.value.toLocaleString('de-AT')} Pp. zum ${monthName(delta.month, true)}` : report[key] === null ? 'Noch kein Wert' : report.groupId === 'LH' && key === 'sellout' ? 'HE + IM' : 'Monatsabschluss'}</small>
         </div>;
       })}</div>
-      <div className="monthly-category"><span>{report.points === null ? 'Monatskategorie noch nicht verfügbar' : `${TIER_LABELS[report.tier]} · ${report.points} ${report.points === 1 ? 'Monatspunkt' : 'Monatspunkte'}`}</span>{report.reportId.startsWith('demo-')&&<small>DEMO</small>}</div>
+      <div className="monthly-category" data-participation={absence?'absent':undefined}><span>{absence?'Bestätigte Abwesenheit · keine SEC-Monatspunkte':report.points === null ? 'Monatskategorie noch nicht verfügbar' : `${TIER_LABELS[report.tier]} · ${report.points} ${report.points === 1 ? 'Monatspunkt' : 'Monatspunkte'}`}</span>{report.reportId.startsWith('demo-')&&<small>DEMO</small>}</div>
     </>}
   </section>;
 }

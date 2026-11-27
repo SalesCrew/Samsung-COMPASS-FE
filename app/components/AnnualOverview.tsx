@@ -35,12 +35,12 @@ export function AnnualPointsCard({ points, onOpenRules, rulesOpen, flow = false,
 }
 
 export function LeaderboardCard({ pool, rank, flow = false, outsideTopTen = false, reason, division }: { pool: number; rank: number | null; flow?: boolean; outsideTopTen?: boolean; reason?: string; division?: string; coverage?:OwnRanking['coverage'] }) {
-  const state = leaderboardState(pool, rank);
+  const state = leaderboardState(reason==='market-scope'?0:pool, reason==='market-scope'?null:rank);
   const outside=state.visible&&(outsideTopTen||state.outside);
-  const display=state.ownRank!==null?'ranked':outside?'outside-top-ten':reason==='incomplete-history'?'incomplete-history':'insufficient-data';
+  const display=reason==='market-scope'?'market-scope':state.ownRank!==null?'ranked':outside?'outside-top-ten':reason==='incomplete-history'?'incomplete-history':'insufficient-data';
   return <section className={`ui-card leaderboard-card leaderboard-own${flow ? ' overview-flow-card' : ''}`} data-ranking-state={display} aria-label={state.ownRank !== null ? `Leaderboard Position ${state.ownRank} von ${pool}` : outside?'Leaderboard: Aktuell nicht in den Top 10':'Leaderboard: Ranking noch nicht verfügbar'}>
     <header><h3>Dein Ranking</h3><p>{division?`${division} · `:''}Letzte 12 Monate</p></header>
-    {state.ownRank!==null?<div className="own-rank-result"><strong>{state.ownRank}</strong><span>Dein Platz</span><small>{pool} SEC mit vollständigen 12 Monaten</small></div>:<div className="own-rank-empty"><Trophy size={28} strokeWidth={1.4} aria-hidden="true"/><strong>{outside?'Aktuell nicht in den Top 10':display==='incomplete-history'?'Deine Historie wächst':'Noch kein Ranking'}</strong><p>{outside?'Mit jedem Monatsabschluss wird neu gereiht.':display==='incomplete-history'?'Für deinen Rang fehlen noch Monatsabschlüsse.':'Ein Vergleich ist ab zehn SEC mit vollständiger Historie möglich.'}</p></div>}
+    {state.ownRank!==null?<div className="own-rank-result"><strong>{state.ownRank}</strong><span>Dein Platz</span><small>{pool} SEC mit vollständigen 12 Monaten</small></div>:<div className="own-rank-empty"><Trophy size={28} strokeWidth={1.4} aria-hidden="true"/><strong>{outside?'Aktuell nicht in den Top 10':display==='market-scope'?'Marktansicht':display==='incomplete-history'?'Deine Historie wächst':'Noch kein Ranking'}</strong><p>{outside?'Mit jedem Monatsabschluss wird neu gereiht.':display==='market-scope'?'Das Ranking für getrennte Marktansichten ist noch nicht festgelegt.':display==='incomplete-history'?'Für deinen Rang fehlen noch Monatsabschlüsse.':'Ein Vergleich ist ab zehn SEC mit vollständiger Historie möglich.'}</p></div>}
     <p className="own-rank-privacy">Nur dein eigener Top-10-Platz.</p>
   </section>;
 }

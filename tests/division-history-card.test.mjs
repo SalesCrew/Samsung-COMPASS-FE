@@ -11,3 +11,11 @@ test('a shorter recorded history labels the source coverage without changing cir
  const props={groupId:'HE',native:true,entries:[{id:'2026-10',label:'Oktober 2026',short:'Okt',category:'SEC',partialLevel:true,knownMonths:8}]};
  const html=renderToStaticMarkup(createElement(CategoryHistoryCard,props));assert.match(html,/Stand aus 8 erfassten Monaten im Zwölfmonatsfenster/);assert.match(html,/Oktober 2026: SEC, Stand aus 8 erfassten Monaten/);assert.match(html,/Level bei kürzerer Historie: Stand der erfassten Monate/);assert.match(html,/category-node tier-bronze/);
 });
+
+test('confirmed absence circles remain visible as dashes without becoming a missing-evidence warning',()=>{
+ const entries=['2026-06','2026-07','2026-08'].map((id,i)=>({id,label:id,short:['Jun','Jul','Aug'][i],category:'—',absence:true}));
+ const html=renderToStaticMarkup(createElement(CategoryHistoryCard,{groupId:'IM',native:true,entries,historyPeriod:{fromMonth:'2025-09',throughMonth:'2026-08'}}));
+ assert.equal((html.match(/data-participation="absent"/g)??[]).length,3);
+ assert.equal((html.match(/<strong>—<\/strong>/g)??[]).length,3);
+ assert.match(html,/nicht teilgenommen/);assert.doesNotMatch(html,/Noch kein SEC-Level verfügbar|fehlt ein belegtes SEC-Level/);
+});

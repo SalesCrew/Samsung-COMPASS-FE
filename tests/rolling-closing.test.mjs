@@ -109,3 +109,17 @@ test('six recorded months earn a level without adding fake older rows or relaxin
  const zero=rows.map(row=>({...row,points:0}));assert.equal(rollingClosing(zero,selected).points,0);assert.equal(rollingClosing(zero,selected).level,'SEC');
  assert.equal(rollingClosing(rows,{...selected,groupId:'ST'}).level,null);
 });
+
+test('confirmed absences keep calendar coverage without counting supplied source points and levels resume after return',()=>{
+ const selected={month:'2026-10',groupId:'IM'},rows=history('2026-10',2);
+ for(const month of ['2025-07','2025-08','2025-09','2025-10'])rows.unshift({...rows[0],month});
+ const confirmed=rows.map(r=>['2026-06','2026-07','2026-08'].includes(r.month)?{...r,participation:'absent',sourcePoints:r.points}:r);
+ const before=JSON.stringify(confirmed),progress=rollingClosing(confirmed,selected),timeline=rollingLevelHistory(confirmed,selected);
+ assert.equal(progress.points,18);assert.equal(progress.knownMonths,12);assert.equal(progress.partial,false);assert.equal(progress.level,'SEC');
+ for(const month of ['2026-06','2026-07','2026-08']){const row=timeline.find(r=>r.month===month);assert.equal(row.level,null);assert.equal(row.absence,true);}
+ for(const month of ['2026-09','2026-10'])assert.equal(timeline.find(r=>r.month===month).level,'SEC');
+ const levels=confirmed.map(r=>({...r,groupId:'IM'}));assert.deepEqual(rollingLevelHistory(confirmed,selected,levels).map(r=>[r.month,r.level,r.absence]),timeline.map(r=>[r.month,r.level,r.absence]));
+ const missing=confirmed.map(r=>r.month==='2026-07'?{...r,points:null}:r);assert.equal(rollingClosing(missing,selected).partial,false);
+ const stillUnknown=confirmed.map(r=>r.month==='2026-05'?{...r,points:null}:r);assert.equal(rollingClosing(stillUnknown,selected).level,null);
+ assert.equal(JSON.stringify(confirmed),before);
+});

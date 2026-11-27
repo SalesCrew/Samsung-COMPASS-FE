@@ -65,7 +65,7 @@ export function PhoneSelect({ value, options, onChange, ariaLabel }: {
         aria-selected={option.value === value} key={option.value}
         className={index === active ? 'is-active' : ''}
         onPointerDown={event => event.preventDefault()} onPointerMove={() => setActive(index)}
-        onClick={() => choose(index)}><span>{option.label}</span>{option.value === value && <Check size={27} aria-hidden="true" />}</div>)}
+        onClick={event => { event.preventDefault(); choose(index); }}><span>{option.label}</span>{option.value === value && <Check size={27} aria-hidden="true" />}</div>)}
     </div>}
   </div>;
 }

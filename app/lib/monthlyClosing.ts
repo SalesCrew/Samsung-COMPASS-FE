@@ -16,7 +16,7 @@ export type MonthlyReport = {
   premium: number | null; extras: { type: string; amount: number }[];
   metrics: ClosingMetric[]; qualitative: ClosingMetric[]; changed: string[];
 };
-export type PointHistoryEntry = { month: string; points: number | null; sourceLevel?: string | null };
+export type PointHistoryEntry = { month: string; points: number | null; sourceLevel?: string | null; participation?: 'absent'; sourcePoints?: number | null };
 export type LevelHistoryEntry = PointHistoryEntry & {groupId:GroupId;division?:GroupId};
 /** Use the same supplied monthly category as the summary; point-only history has documented 1/2/3 awards. */
 export function historyMonthTier(points:number|null,report?:Pick<MonthlyReport,'tier'|'points'>):PerformanceTier {
@@ -117,11 +117,12 @@ export function rollingClosing(history: readonly PointHistoryEntry[], selected: 
   const months=[selected.month];
   while(months.length<12)months.unshift(previousMonth(months[0]));
   const byMonth=new Map(history.map(row=>[row.month,row]));
-  const valid=(row:PointHistoryEntry|undefined)=>typeof row?.points==='number'&&Number.isFinite(row.points)&&row.points>=0&&row.points<=3;
+  const valid=(row:PointHistoryEntry|undefined)=>row?.participation==='absent'||typeof row?.points==='number'&&Number.isFinite(row.points)&&row.points>=0&&row.points<=3;
   const known=months.flatMap(month=>valid(byMonth.get(month))?[byMonth.get(month)!]:[]);
   const missing=months.filter(month=>!valid(byMonth.get(month)));
-  const points=selected.groupId==='ST'||!known.length?null:known.reduce((sum,row)=>sum+row.points!,0);
-  const supplied=byMonth.get(selected.month)?.sourceLevel?.replace(/\s/g,'').toUpperCase();
+  const points=selected.groupId==='ST'||!known.length?null:known.reduce((sum,row)=>sum+(row.participation==='absent'?0:row.points!),0);
+  const selectedRow=byMonth.get(selected.month);
+  const supplied=selectedRow?.participation==='absent'?undefined:selectedRow?.sourceLevel?.replace(/\s/g,'').toUpperCase();
   const sourceLevel=supplied==='SEC'?'SEC':supplied==='SEC+'?'SEC+':supplied==='SECPRO'?'SEC Pro':null;
   // A shorter recorded history still has an earned level. Only leading months
   // before its first record may be absent; gaps/errors within that history stay unknown.
@@ -132,13 +133,14 @@ export function rollingClosing(history: readonly PointHistoryEntry[], selected: 
   return {fromMonth:months[0],throughMonth:selected.month,months,missing,knownMonths:known.length,partial:missing.length>0,points,level,levelFromRecordedMonths};
 }
 /** Keep the displayed period complete without inventing levels for missing evidence. */
-export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>,levels?:readonly LevelHistoryEntry[]):{month:string;level:string|null;division?:GroupId;knownMonths?:number;partialLevel?:boolean}[]{
+export function rollingLevelHistory(history:readonly PointHistoryEntry[],selected:Pick<MonthlyReport,'month'|'groupId'>,levels?:readonly LevelHistoryEntry[]):{month:string;level:string|null;division?:GroupId;knownMonths?:number;partialLevel?:boolean;absence?:boolean}[]{
   return rollingClosing(history,selected).months.map(month=>{
-    if(!levels){const current=rollingClosing(history,{month,groupId:selected.groupId});return {month,level:current.level,knownMonths:current.knownMonths,partialLevel:current.levelFromRecordedMonths};}
+    if(!levels){if(history.find(row=>row.month===month)?.participation==='absent')return {month,level:null,absence:true};const current=rollingClosing(history,{month,groupId:selected.groupId});return {month,level:current.level,knownMonths:current.knownMonths,partialLevel:current.levelFromRecordedMonths};}
     const candidates=levels.filter(row=>row.month===month);
     const own=candidates.filter(row=>row.groupId===selected.groupId);
     const row=own.length===1?own[0]:own.length===0&&candidates.length===1?candidates[0]:undefined;
     if(!row)return {month,level:null};
+    if(row.participation==='absent')return {month,level:null,division:row.division??row.groupId,absence:true};
     const source=levels.filter(item=>item.groupId===row.groupId);
     const current=rollingClosing(source,{month,groupId:row.groupId});
     return {month,level:current.level,division:row.division??row.groupId,knownMonths:current.knownMonths,partialLevel:current.levelFromRecordedMonths};

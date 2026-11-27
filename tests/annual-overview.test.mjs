@@ -36,3 +36,9 @@ test('ranking keeps own results and empty states while omitting the expanded coh
  const small=render(LeaderboardCard,{pool:0,rank:null,reason:'not-enough-participants'});
  assert.doesNotMatch(small,/Wer wird verglichen|SEC im gewählten Abschluss/);
 });
+
+test('an unconfigured market ranking explains the scope instead of claiming missing monthly data',()=>{
+ const html=render(LeaderboardCard,{pool:20,rank:3,reason:'market-scope',division:'IM'});
+ assert.match(html,/getrennte Marktansichten/);assert.match(html,/noch nicht festgelegt/);
+ assert.doesNotMatch(html,/Dein Platz|Leaderboard Position|fehlen noch Monatsabschlüsse/);
+});

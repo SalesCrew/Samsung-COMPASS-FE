@@ -21,7 +21,7 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, levelHi
   if (!report) return <div className="monthly-dashboard">{countdown}<section className="configured-card monthly-empty"><h2>Noch kein Monatsabschluss verfügbar</h2><p>Dein Monatsbericht erscheint nach der Veröffentlichung.</p></section><MonthlyPremiumCard report={null} groupId={group.id} /><section id={group.id+'-section-category'} className="monthly-empty-section"><h2>{isST ? 'Jahresübersicht' : 'Punkte & SEC-Level'}</h2><p>Für diesen Datenstand noch nicht verfügbar.</p></section><section id={group.id+'-section-monthly'} />{targets}<PerformanceChart group={group} filters={filters} reports={reports} className="configured-card configured-history" /></div>;
   const annual = annualClosing(reports,report);
   const premiums = rollingPremiums(premiumHistory??activeReports(reports),report.month);
-  const history=pointHistory??activeReports(reports);
+  const history:readonly PointHistoryEntry[]=pointHistory??activeReports(reports);
   const progress=rollingClosing(history,report);
   const defaults = groupMetricBlocks(group.id, report.setting);
   const blocks = realData ? group.id==='LH'
@@ -34,10 +34,10 @@ export function MonthlyDashboard({ group, report, reports, pointHistory, levelHi
   const monthlyReports=new Map(activeReports(reports).map(r=>[r.month,r]));
   const historyByMonth=new Map(history.map(row=>[row.month,row]));
   const levelRows=realData?rollingLevelHistory(history,report,levelHistory):history.filter(row=>row.month<=report.month).map(row=>({month:row.month,level:rollingClosing(history,{month:row.month,groupId:group.id}).level}));
-  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',partialLevel:'partialLevel' in row?row.partialLevel:false,knownMonths:'knownMonths' in row?row.knownMonths:undefined,division:'division' in row&&row.division!==group.id?String(row.division):undefined,tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
+  const categories = levelRows.map(row => ({ id: row.month, label: monthName(row.month), short: monthName(row.month,true)+(row.month.startsWith(annual.year) ? '' : ' '+row.month.slice(2,4)), category: row.level ?? '—',partialLevel:'partialLevel' in row?row.partialLevel:false,knownMonths:'knownMonths' in row?row.knownMonths:undefined,absence:'absence' in row&&row.absence===true,division:'division' in row&&row.division!==group.id?String(row.division):undefined,tier:historyMonthTier(historyByMonth.get(row.month)?.points??null,monthlyReports.get(row.month)) }));
   return <div className="monthly-dashboard">
     {countdown}
-    <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} />
+    <MonthlyReportSummary report={report} reports={reports} unread={unread} latestUnread={latestUnread} comparison={filters.comparison !== 'none'} onDetails={onDetails} onLatest={onLatest} absence={history.find(row=>row.month===report.month)?.participation==='absent'} />
     <MonthlyPremiumCard report={report} groupId={group.id} />
     <section className="monthly-annual-section" id={isST ? undefined : group.id+'-section-category'} aria-labelledby={group.id+'-annual-title'}>
       <header className="monthly-section-heading"><h2 id={group.id+'-annual-title'}>{isST ? 'Jahresübersicht' : 'Punkte & SEC-Level'}</h2><p>{isST?`${annual.year} · Stand nach ${monthName(report.month).split(' ')[0]}`:`Letzte 12 Monate · ${monthName(progress.fromMonth)} – ${monthName(progress.throughMonth)}`}</p></header>

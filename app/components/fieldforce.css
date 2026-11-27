@@ -206,3 +206,5 @@ html:has(.is-fieldforce)::-webkit-scrollbar { display: none; }
 .fieldforce-dashboard .dashboard-filter-footer > p { margin-bottom: 10px; font-size: 11px; }
 .fieldforce-dashboard .filter-close svg, .fieldforce-dashboard .points-rules-trigger svg, .fieldforce-dashboard .performance-chart-info svg { width: 16px; height: 16px; }
 .fieldforce-dashboard .closing-metric-tile[data-result-state=not-applicable] > strong, .fieldforce-dashboard .closing-metric-result[data-result-state=not-applicable] > strong { font-size: 13px; line-height: 1.4; color: var(--sec-copy-muted); letter-spacing: 0; }
+
+.fieldforce-market-scope { margin: -4px 0 12px; font-size: 12px; line-height: 1.5; color: var(--sec-copy-muted); }
